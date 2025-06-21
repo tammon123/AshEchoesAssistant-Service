@@ -170,6 +170,35 @@ public class ComputeElementBehaviorAndEffect {
                 behaviors.add(init.getBehavior(2037L));
             }
         }
+        //增加雷地板处理
+        if (behaviorIds.contains((2011L))) {
+            if (behaviorIds.contains(2004L)) {
+                //爆燃
+                behaviors.add(init.getBehavior(2025L));
+                behaviors.add(init.getBehavior(2027L));
+                if (c != null) {
+                    behaviors.add(init.getBehavior(2035L));
+                    behaviors.add(init.getBehavior(2037L));
+                }
+            } else if (behaviorIds.contains(2005L)) {
+                //传导
+                behaviors.add(init.getBehavior(2023L));
+                behaviors.add(init.getBehavior(2027L));
+                if (c != null) {
+                    behaviors.add(init.getBehavior(2033L));
+                    behaviors.add(init.getBehavior(2037L));
+                }
+            } else if (behaviorIds.contains(2006L)) {
+                //电解
+                behaviors.add(init.getBehavior(2024L));
+                behaviors.add(init.getBehavior(2027L));
+                if (c != null) {
+                    behaviors.add(init.getBehavior(2034L));
+                    behaviors.add(init.getBehavior(2037L));
+                }
+            }
+
+        }
         //冻结
         if (new HashSet<>(behaviorIds).containsAll(Arrays.asList((2001L), (2006L))) ||
                 new HashSet<>(behaviorIds).containsAll(Arrays.asList((2003L), (2005L)))) {
@@ -188,6 +217,10 @@ public class ComputeElementBehaviorAndEffect {
         //炎
         if (behaviorIds.contains(2002L)) {
             behaviors.add(init.getBehavior(2002L));
+        }
+        //雷
+        if (behaviorIds.contains(201L)) {
+            behaviors.add(init.getBehavior(2011L));
         }
         // 产生霜地板条件
         if (new HashSet<>(behaviorIds).containsAll(Arrays.asList((2001L), (2006L))) || ("潮湿".equals(vo.getEnv()) &&
