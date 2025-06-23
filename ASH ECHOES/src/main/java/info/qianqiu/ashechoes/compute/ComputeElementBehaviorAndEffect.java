@@ -219,7 +219,7 @@ public class ComputeElementBehaviorAndEffect {
             behaviors.add(init.getBehavior(2002L));
         }
         //雷
-        if (behaviorIds.contains(201L)) {
+        if (behaviorIds.contains(2011L)) {
             behaviors.add(init.getBehavior(2011L));
         }
         // 产生霜地板条件
