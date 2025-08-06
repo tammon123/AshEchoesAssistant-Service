@@ -26,6 +26,7 @@ public class PoolDataRank {
     private Long tHasCount;
     private Long upCount;
     private Long upHasCount;
+    private Integer rankType;
     private String tRate;
     private String tAvg;
     private String uAvg;

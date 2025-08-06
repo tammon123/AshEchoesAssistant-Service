@@ -16,6 +16,6 @@ import java.util.ArrayList;
  */
 public interface UserMapper extends BaseMapper<User> {
 
-    @Select("select count(*) as count, type,`rank`,pool from pool_data where uid=#{uid} and pool != '海域同游' and pool != '限域巡回' and pool != '既定回响' group by type,`rank`,pool ")
+    @Select("select count(*) as count, type,`rank`,pool from pool_data where uid=#{uid} and pool != '限域巡回' and pool != '既定回响' group by type,`rank`,pool ")
     ArrayList<PoolDataUserinfoVo> groupByUserinfoData(@Param("uid") String uid);
 }

@@ -23,24 +23,24 @@ public interface PoolDataRankMapper extends BaseMapper<PoolDataRank> {
             "THEN 1 " +
             "ELSE 0 " +
             "END " +
-            "FROM pool_data_rank where uid=#{uid} limit 1 ")
-    public Integer queryTodayUpdated(@Param("datee") Date date, @Param("uid") String uid);
+            "FROM pool_data_rank where uid=#{uid} and rank_type=${rankType} limit 1 ")
+    public Integer queryTodayUpdated(@Param("datee") Date date, @Param("uid") String uid, @Param("rankType")Integer rankType);
 
     @Select("<script> "+
             "SELECT " +
             "    COUNT(*) " +
             "FROM pool_data_rank " +
-            "WHERE  pool_type=${type} and allow=1 and t_count &gt; ${ignum} and ${beh} " +
+            "WHERE  pool_type=${type} and rank_type=${rankType} and allow=1 and t_count &gt; ${ignum} and ${beh} " +
             "<if test=\" sort == 0 \"> "+
             " &gt; " +
             "</if>" +
             "<if test=\" sort == 1 \"> "+
             " &lt; " +
             "</if>" +
-            "(SELECT ${beh} FROM pool_data_rank WHERE uid = #{uid} and t_count &gt; ${ignum} and pool_type=${type} and allow=1) "+
+            "(SELECT ${beh} FROM pool_data_rank WHERE uid = #{uid} and t_count &gt; ${ignum} and pool_type=${type} and allow=1 and rank_type=${rankType}) "+
             "</script> ")
     Integer getUserRank(@Param("type") int type, @Param("sort") int sort, @Param("beh") String beh,
-                     @Param("uid") String uid,@Param("ignum") int ignum);
+                     @Param("uid") String uid,@Param("ignum") int ignum, @Param("rankType")Integer rankType);
 
     @Select("select name, count(*) as count from pool_data where uid = #{uid} and type = 1 and `rank` in (2,3) group by name")
     List<PoolDataVo> getMemoryGroupCountByUid(@Param("uid") String uid);

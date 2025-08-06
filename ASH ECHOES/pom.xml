@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>info.qianqiu</groupId>
-    <artifactId>AshEchaos</artifactId>
+    <artifactId>AshEchoes</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>AshEchaos</name>
-    <description>AshEchaos</description>
+    <name>AshEchoes</name>
+    <description>AshEchoes</description>
     <url/>
     <licenses>
         <license/>

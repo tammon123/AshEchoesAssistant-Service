@@ -62,6 +62,7 @@ public class PoolDataController {
 
     /**
      * 获取当前用户抽了多少SR和SSR卡
+     * 监督刻印计算用的
      * @param uid
      * @return
      */
@@ -109,17 +110,18 @@ public class PoolDataController {
                 new LambdaUpdateWrapper<PoolDataRank>().set(PoolDataRank::getAllow, 0).eq(PoolDataRank::getUid, uid)));
     }
 
-    @GetMapping("/poolrank/{type}/{page}/{size}/{sort}/{ignore}/{beh}/{uid}")
+    @GetMapping("/poolrank/{type}/{page}/{size}/{sort}/{ignore}/{beh}/{uid}/{rankType}")
     public R getPagePoolDataRank(@PathVariable("type") Integer type, @PathVariable("page") Integer page,
                                  @PathVariable("size") Integer size,
                                  @PathVariable("sort") Integer sort, @PathVariable("ignore") Integer ignore,
-                                 @PathVariable("beh") String beh, @PathVariable("uid") String uid) {
+                                 @PathVariable("beh") String beh, @PathVariable("uid") String uid,@PathVariable("rankType")Integer rankType) {
 
-        return poolDataService.getPagePoolDataRank(type, page, size, sort, ignore, beh, uid);
+        return poolDataService.getPagePoolDataRank(type, page, size, sort, ignore, beh, uid, rankType);
     }
 
     /**
      * 主列表页面
+     * 总览视图
      *
      * @param uid
      * @param type
@@ -135,11 +137,12 @@ public class PoolDataController {
         } catch (Exception e) {
             return R.fail("当前账号异常，请重新登录~");
         }
-        return poolDataService.getNewAllPoolData(uid, type);
+        return poolDataService.getTotalPoolData(uid, type);
     }
 
     /**
      * 主列表页面
+     * 分卡池视图
      *
      * @param uid
      * @param type
@@ -156,9 +159,9 @@ public class PoolDataController {
             return R.fail("当前账号异常，请重新登录~");
         }
         if ("0".equals(type) || "1".equals(type)) {
-            return poolDataService.getPoolGroupData(uid, type);
+            return poolDataService.getGroupPoolData(uid, type);
         }
-        return poolDataService.getNewAllPoolData(uid, type);
+        return poolDataService.getTotalPoolData(uid, type);
     }
 
     /**

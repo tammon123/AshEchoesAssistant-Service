@@ -9,6 +9,5 @@ public class PoolDataUserinfoVo {
     private Integer type;
     private Integer rank;
     private String pool;
-    private String name;
 
 }

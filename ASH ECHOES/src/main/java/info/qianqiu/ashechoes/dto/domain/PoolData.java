@@ -24,6 +24,8 @@ public class PoolData {
     private String name;
     @TableField("`type`")
     private Byte type;
+    @TableField("`sp`")
+    private Byte sp;
     @TableField("`rank`")
     private Byte rank;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

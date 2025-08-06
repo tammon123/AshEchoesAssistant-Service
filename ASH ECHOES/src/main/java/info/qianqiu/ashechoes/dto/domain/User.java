@@ -38,6 +38,10 @@ public class User {
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @TableField("`time`")
     private Date time;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @TableField("`last_login`")
+    private Date lastLogin;
     @TableLogic
     @JsonIgnore
     private String del;

@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
+
 /**
  * 用户操作相关接口
  */
@@ -32,10 +34,18 @@ public class LoginController {
         return R.fail("未知命令");
     }
 
+    @GetMapping("/user/ls/{id}")
+    public R userls(@PathVariable("id")String id) {
+        userService.update(new LambdaUpdateWrapper<User>()
+                        .set(User::getLastLogin, new Date())
+                .eq(User::getUid, id));
+        return R.ok();
+    }
     @PostMapping("/user/modify")
     public R userModify(@RequestBody User user) {
         return userService.modify(user);
     }
+
 
     @PostMapping("/user/psw/sendMail")
     public R sendPswEmail(@RequestBody User user) {
