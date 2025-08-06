@@ -604,8 +604,6 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
             c.setUid(c.getUid().substring(c.getUid().length() - 8));
         }
         JSONObject r = new JSONObject();
-        BigDecimal divide = new BigDecimal(rank - 1).divide(new BigDecimal(count - 1), 4, RoundingMode.HALF_UP);
-        BigDecimal multiply = new BigDecimal("1").subtract(divide).multiply(new BigDecimal(100));
 
         r.put("ar", records);
         r.put("t", count);
@@ -614,7 +612,6 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         if (records.getFirst().getUid().equals(uuid)) {
             r.put("r", 1);
         }
-        r.put("e", multiply);
         r.put("ti", uuid);
         return R.ok(r);
     }
