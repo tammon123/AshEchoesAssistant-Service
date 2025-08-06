@@ -506,7 +506,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                     .uTr(chars.getString("tr").replaceAll("%", ""))
                     .tCount(chars.getLong("size")).tHasCount(chars.getLong("r6count"))
                     .upCount(chars.getLong("r6xdtotal")).upHasCount(chars.getLong("r6xdcount")).uid(uid)
-                    .allow(0L).startTime(new Date()).lastTime(new Date()).rankType(rankType)
+                    .allow(1L).startTime(new Date()).lastTime(new Date()).rankType(rankType)
                     .build();
             // 添加记录
             PoolDataRank memorys = PoolDataRank.builder()
@@ -519,7 +519,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                     .uTr(memory.getString("tr").replaceAll("%", ""))
                     .tHasCount(memory.getLong("r6count"))
                     .upCount(memory.getLong("r6xdtotal")).upHasCount(memory.getLong("r6xdcount")).uid(uid)
-                    .allow(0L).startTime(new Date()).lastTime(new Date()).rankType(rankType)
+                    .allow(1L).startTime(new Date()).lastTime(new Date()).rankType(rankType)
                     .build();
             ArrayList<PoolDataRank> poolDataRanks = new ArrayList<>();
             poolDataRanks.add(charr);
