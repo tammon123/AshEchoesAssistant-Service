@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
 
-    private final static int INSERT_COUNT = 500;
+    private final static int INSERT_COUNT = 1000;
     private final UserService userService;
     private final PoolDataMapper poolDataMapper;
     private final PoolDataRankMapper poolDataRankMapper;
@@ -1071,10 +1071,10 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         } catch (Exception e) {
             log.info("{}", e.getMessage());
             e.printStackTrace();
+            return R.fail(e.getMessage());
         } finally {
+            userStatusMap.remove(uid);
         }
-        userStatusMap.remove(uid);
-        return R.fail("数据导入失败，请联系开发人员");
 
     }
 
@@ -1155,6 +1155,9 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 String.class
         );
         JSONObject r = JSONObject.parseObject(response.getBody());
+        if (!"0".equals(r.getString("iRet"))) {
+            throw new RuntimeException(r.getString("sMsg"));
+        }
         JSONObject jsonArray = r.getJSONObject("jData").getJSONObject("data");
         ArrayList<PoolData> result = new ArrayList<>();
         try {
@@ -1162,7 +1165,6 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
             for (String key : strings) {
                 // 当前数据重复
                 if (lastCharKey.get().equals(key)) {
-                    log.error("角色重复{}:{}:{}", uid, key, jsonArray.getJSONArray(key));
                     continue;
                 }
                 for (Object o : jsonArray.getJSONArray(key)) {
@@ -1235,15 +1237,16 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         );
 
         JSONObject r = JSONObject.parseObject(response.getBody());
+        if (!"0".equals(r.getString("iRet"))) {
+            throw new RuntimeException(r.getString("sMsg"));
+        }
         ArrayList<PoolData> result = new ArrayList<>();
         JSONObject jsonArray = r.getJSONObject("jData").getJSONObject("data");
         try {
-
             Set<String> strings = jsonArray.keySet();
             for (String key : strings) {
                 // 当前数据重复
                 if (lastMemoryKey.get().equals(key)) {
-                    log.error("烙痕重复:{}:{}:{}", uid, key, jsonArray.getJSONArray(key));
                     continue;
                 }
                 for (Object o : jsonArray.getJSONArray(key)) {
