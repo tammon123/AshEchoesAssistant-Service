@@ -34,6 +34,7 @@ public class SyncHandle {
         // 如果有【默】这张烙痕
         // 因为魇镜需要特殊判断，因此单独吧攻击计算拉出来
         sync.set刻印攻击(sync.get刻印攻击().add(new BigDecimal("0.15")));
+        sync.set暴击伤害(sync.get暴击伤害().add(new BigDecimal("0.3")));
         for (ArrayList<Skill> skills : rSkillList) {
             BigDecimal 总刻印攻击百分比 = new BigDecimal(0);
             BigDecimal 总刻印攻击值 = new BigDecimal(0);

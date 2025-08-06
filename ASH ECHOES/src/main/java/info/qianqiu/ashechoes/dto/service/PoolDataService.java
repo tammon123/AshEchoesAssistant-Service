@@ -1027,6 +1027,9 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                             pol = new JSONObject();
                             pol.put("name", "烙痕池" + oo.getString("poolId") + "(待开发者同步)");
                         }
+                        if ("100".equals(oo.getString("poolId"))) {
+                            continue;
+                        }
                         String time = oo.getString("time");
                         PoolData pd = new PoolData();
                         pd.setId(Id.id());

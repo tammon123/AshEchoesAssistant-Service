@@ -26,6 +26,7 @@ public class SyncData {
 
     public SyncData() {
         allow.add("玄戈");
+        allow.add("织雪");
         //刻印专精
         allowDamage.add("201");
         //刻印攻击增加值
