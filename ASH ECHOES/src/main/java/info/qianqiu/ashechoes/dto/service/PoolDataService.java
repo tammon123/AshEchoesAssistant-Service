@@ -164,14 +164,14 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                     o1.put("r6count", r6count);
                     o1.put("r6xdcount", xiandinc);
                     o1.put("r6xdtotal", xdtoTal);
-                    String pj = "";
+                    String pj = "0";
                     if (xiandinc != 0) {
                         pj = new BigDecimal(xdtoTal)
                                 .divide(new BigDecimal(xiandinc), 2, RoundingMode.HALF_UP)
                                 .toPlainString();
                     }
                     o1.put("pj", pj);
-                    String rate = "";
+                    String rate = "0";
                     try {
                         rate =
                                 new BigDecimal(r6count).multiply(new BigDecimal(100))
@@ -201,14 +201,14 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                     o2.put("r6count", r6count);
                     o2.put("r6xdcount", xiandinm);
                     o2.put("r6xdtotal", xdtotal);
-                    String pj = "";
+                    String pj = "0";
                     if (xiandinm != 0) {
                         pj = new BigDecimal(xdtotal)
                                 .divide(new BigDecimal(xiandinm), 2, RoundingMode.HALF_UP)
                                 .toPlainString();
                     }
                     o2.put("pj", pj);
-                    String rate = "";
+                    String rate = "0";
                     try {
                         rate =
                                 new BigDecimal(r6count).multiply(new BigDecimal(100))
@@ -294,6 +294,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 //如果上期的最后一个抽的角色是up角色，就跳过，如果不是，就添加保底标志
                 if (cflag.isEmpty()) {
                     if (!localCharPool.equals(pd.getPool())) {
+                        // 如果上期的角色歪了，下一个角色为UP角色就不应该记录
                         if (!pd.getName().equals(init.localUpChar.get(pd.getPool()))) {
                             charIgnore = true;
                         }
@@ -364,6 +365,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                     JSONObject pool = (JSONObject) reversed.get(poolId);
                     String name = pool.getString("name");
                     String type = pool.getString("type");
+                    // 查看往期的角色 是属于哪个池子
                     if (!name.equals(localCharPool) && !name.equals(localMemoryPool)) {
                         if ("1".equals(type) && charFind == 0) {
                             cc.add(name);
@@ -423,14 +425,14 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                     o1.put("r6count", r6count);
                     o1.put("r6xdcount", xiandinc);
                     o1.put("r6xdtotal", total);
-                    String pj = "";
+                    String pj = "0";
                     if (xiandinc != 0) {
                         pj = new BigDecimal(total)
                                 .divide(new BigDecimal(xiandinc), 2, RoundingMode.HALF_UP)
                                 .toPlainString();
                     }
                     o1.put("pj", pj);
-                    String rate = "";
+                    String rate = "0";
                     try {
                         rate =
                                 new BigDecimal(r6count).multiply(new BigDecimal(100))
@@ -456,14 +458,14 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                     o2.put("r6count", r6count);
                     o2.put("r6xdcount", xiandinm);
                     o2.put("r6xdtotal", total);
-                    String pj = "";
+                    String pj = "0";
                     if (xiandinm != 0) {
                         pj = new BigDecimal(total)
                                 .divide(new BigDecimal(xiandinm), 2, RoundingMode.HALF_UP)
                                 .toPlainString();
                     }
                     o2.put("pj", pj);
-                    String rate = "";
+                    String rate = "0";
                     try {
                         rate =
                                 new BigDecimal(r6count).multiply(new BigDecimal(100))
@@ -496,12 +498,16 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
             JSONObject memory = j.getJSONObject("1");
             // 数据库没有该用户的数据，需要增加
             // 添加记录
+            String ctAvg = "0";
+            try {
+                ctAvg = new BigDecimal(chars.getString("size"))
+                        .divide(new BigDecimal(chars.getString("r6count")), 2, RoundingMode.HALF_UP)
+                        .toPlainString();
+            }catch (Exception ignore){}
             PoolDataRank charr = PoolDataRank.builder()
                     .pdrId(Id.id()).poolType(0L)
                     .uAvg(chars.getString("pj"))
-                    .tAvg(new BigDecimal(chars.getString("size"))
-                            .divide(new BigDecimal(chars.getString("r6count")), 2, RoundingMode.HALF_UP)
-                            .toPlainString())
+                    .tAvg(ctAvg)
                     .tRate(chars.getString("rate").replaceAll("%", ""))
                     .uTr(chars.getString("tr").replaceAll("%", ""))
                     .tCount(chars.getLong("size")).tHasCount(chars.getLong("r6count"))
@@ -509,12 +515,16 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                     .allow(1L).startTime(new Date()).lastTime(new Date()).rankType(rankType)
                     .build();
             // 添加记录
+            String mtAvg = "0";
+            try {
+                mtAvg =new BigDecimal(memory.getString("size"))
+                        .divide(new BigDecimal(memory.getString("r6count")), 1, RoundingMode.HALF_UP)
+                        .toPlainString();
+            }catch (Exception ignore){}
             PoolDataRank memorys = PoolDataRank.builder()
                     .pdrId(Id.id()).poolType(1L).tCount(memory.getLong("size"))
                     .uAvg(memory.getString("pj"))
-                    .tAvg(new BigDecimal(memory.getString("size"))
-                            .divide(new BigDecimal(memory.getString("r6count")), 1, RoundingMode.HALF_UP)
-                            .toPlainString())
+                    .tAvg(mtAvg)
                     .tRate(memory.getString("rate").replaceAll("%", ""))
                     .uTr(memory.getString("tr").replaceAll("%", ""))
                     .tHasCount(memory.getLong("r6count"))
@@ -966,6 +976,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
     }
 
     private String computeRate(ArrayList<Long> rdata) {
+
         int f = 0;
         int s = 0;
         for (Long a : rdata) {
