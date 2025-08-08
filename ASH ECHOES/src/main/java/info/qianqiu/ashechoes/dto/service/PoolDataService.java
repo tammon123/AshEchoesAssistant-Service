@@ -254,16 +254,16 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
             if (memoryCount < 2 && "2".equals(type) && collect1.containsKey(name)) {
                 memoryCount++;
                 needCheckPoolNames.add(name);
-                if (StringUtils.isEmpty(localMemoryPool)) {
-                    localMemoryPool = name;
-                }
             }
             if (charCount < 2 && "1".equals(type) && collect1.containsKey(name)) {
                 charCount++;
                 needCheckPoolNames.add(name);
-                if (StringUtils.isEmpty(localCharPool)) {
-                    localCharPool = name;
-                }
+            }
+            if (StringUtils.isEmpty(localMemoryPool) && "2".equals(type)) {
+                localMemoryPool = name;
+            }
+            if (StringUtils.isEmpty(localCharPool) && "1".equals(type)) {
+                localCharPool = name;
             }
         }
         ArrayList<Long> mflag = new ArrayList<>();
@@ -503,7 +503,8 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 ctAvg = new BigDecimal(chars.getString("size"))
                         .divide(new BigDecimal(chars.getString("r6count")), 2, RoundingMode.HALF_UP)
                         .toPlainString();
-            }catch (Exception ignore){}
+            } catch (Exception ignore) {
+            }
             PoolDataRank charr = PoolDataRank.builder()
                     .pdrId(Id.id()).poolType(0L)
                     .uAvg(chars.getString("pj"))
@@ -517,10 +518,11 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
             // 添加记录
             String mtAvg = "0";
             try {
-                mtAvg =new BigDecimal(memory.getString("size"))
+                mtAvg = new BigDecimal(memory.getString("size"))
                         .divide(new BigDecimal(memory.getString("r6count")), 1, RoundingMode.HALF_UP)
                         .toPlainString();
-            }catch (Exception ignore){}
+            } catch (Exception ignore) {
+            }
             PoolDataRank memorys = PoolDataRank.builder()
                     .pdrId(Id.id()).poolType(1L).tCount(memory.getLong("size"))
                     .uAvg(memory.getString("pj"))
@@ -581,6 +583,9 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 .orderBy("uTr".equals(beh), sort == 1, PoolDataRank::getUTr)
                 .orderBy("tAvg".equals(beh), sort == 1, PoolDataRank::getTAvg)
                 .orderBy("uAvg".equals(beh), sort == 1, PoolDataRank::getUAvg)
+                .ne("uAvg".equals(beh), PoolDataRank::getUAvg, "0.00")
+                .ne("tAvg".equals(beh), PoolDataRank::getTAvg, "0.00")
+                .ne("tCount".equals(beh), PoolDataRank::getTCount, 0)
                 .gt(PoolDataRank::getTCount, ignore)
                 .eq(PoolDataRank::getAllow, 1)
                 .eq(PoolDataRank::getPoolType, type)

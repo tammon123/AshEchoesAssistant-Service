@@ -177,29 +177,6 @@ public class PoolDataController {
     }
 
     /**
-     * 同步卡池数据
-     *
-     * @param uid
-     * @param data
-     * @return
-     */
-    @PostMapping("/pool/post/{uid}")
-    public R poolData(@PathVariable("uid") String uid, @RequestBody String data) {
-        if ("undefined".equals(uid)) {
-            return R.fail("当前账号异常，请重新登录~");
-        }
-        try {
-            long l = Long.parseLong(uid);
-        } catch (Exception e) {
-            return R.fail("当前账号异常，请重新登录~");
-        }
-//        VThread.submit(() -> {
-//            poolDataService.postData(uid, data);
-//        });
-        return R.fail("旧版本APP导入接口已关停，请升级新版本或使用网页端");
-    }
-
-    /**
      * 同步卡池
      *
      * @return
