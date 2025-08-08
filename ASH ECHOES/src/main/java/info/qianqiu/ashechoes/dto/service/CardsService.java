@@ -82,6 +82,9 @@ public class CardsService extends ServiceImpl<CardsMapper, Cards> {
         byId.setSpskills(byId.getSpskills().replaceAll("，", ","));
         byId.setSp2skills(byId.getSp2skills().replaceAll("，", ","));
         byId.setMemoryNames(byId.getMemoryNames().replaceAll("，", ","));
+        if (StringUtils.isNotEmpty(byId.getLeaderExt())) {
+            byId.setLeaderE(init.getSimpleCharacterByNameGroup(byId.getLeaderExt()));
+        }
         for (String s : byId.getCharNames().split(",")) {
             characters.add(init.getSimpleCharacterByNameGroup(s));
         }
@@ -141,6 +144,9 @@ public class CardsService extends ServiceImpl<CardsMapper, Cards> {
         byId.setCharNames(byId.getCharNames().replaceAll("，", ","));
         byId.setSpskills(byId.getSpskills().replaceAll("，", ","));
         byId.setMemoryNames(byId.getMemoryNames().replaceAll("，", ","));
+        if (StringUtils.isNotEmpty(byId.getLeaderExt())) {
+            byId.setLeaderE(init.getSimpleCharacterByNameGroup(byId.getLeaderExt()));
+        }
         for (String s : byId.getCharNames().split(",")) {
             characters.add(init.getSimpleCharacterByNameGroup(s));
         }
@@ -204,6 +210,7 @@ public class CardsService extends ServiceImpl<CardsMapper, Cards> {
         if (update) {
             post = update(new LambdaUpdateWrapper<Cards>()
                     .set(Cards::getTitle, cards.getTitle())
+                    .set(Cards::getLeaderExt, cards.getLeaderExt())
                     .set(Cards::getCharNames, cards.getCharNames())
                     .set(Cards::getMemoryNames, cards.getMemoryNames())
                     .set(Cards::getSpskills, cards.getSpskills())

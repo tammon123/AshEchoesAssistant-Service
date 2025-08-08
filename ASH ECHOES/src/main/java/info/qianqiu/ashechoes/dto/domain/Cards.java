@@ -25,6 +25,8 @@ import java.util.Date;
 @TableName("`cards`")
 public class Cards {
     @TableField(exist = false)
+    private Character leaderE;
+    @TableField(exist = false)
     private ArrayList<Character> chars;
     @TableField(exist = false)
     private ArrayList<ArrayList<Skill>> chareqs;
@@ -43,6 +45,7 @@ public class Cards {
     /** 主键 */
     @TableId(type = IdType.AUTO)
     private Long cardId;
+    private String leaderExt;
     private String charNames;
     private String memoryNames;
     private String remark;
