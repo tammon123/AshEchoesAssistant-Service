@@ -347,13 +347,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         // 计算当前是否歪了 烙痕
         String m = computeRate(mflag);
         if (!groupCountData.isEmpty()) {
-            final String localCharPool1 = localCharPool;
-            final String localMemoryPool1 = localMemoryPool;
-            // 获取本期卡池数据
-            Map<Integer, List<PoolDataUserinfoVo>> collect =
-                    groupCountData.stream().filter(e ->
-                            localCharPool1.equals(e.getPool()) || localMemoryPool1.equals(e.getPool())
-                    ).collect(Collectors.groupingBy(PoolDataUserinfoVo::getType));
+
             // 获取上期卡池垫了多少
             int cDian = 0;
             int mDian = 0;
@@ -411,74 +405,113 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
             }
             JSONObject o1 = new JSONObject();
             JSONObject o2 = new JSONObject();
-            for (Integer i : collect.keySet()) {
-                if (i == 0) {
+            // 获取本期卡池数据
+            final String localCharPool1 = localCharPool;
+            final String localMemoryPool1 = localMemoryPool;
+            Map<Integer, List<PoolDataUserinfoVo>> collect =
+                    groupCountData.stream().filter(e ->
+                            localCharPool1.equals(e.getPool()) || localMemoryPool1.equals(e.getPool())
+                    ).collect(Collectors.groupingBy(PoolDataUserinfoVo::getType));
+            // 临时补丁，懒得优化
+            if (collect.keySet().isEmpty()) {
+                {
                     Integer r6count = 0;
                     Integer total = cDian;
-                    for (PoolDataUserinfoVo v : collect.get(i)) {
-                        total += v.getCount();
-                        if (v.getRank() == 6) {
-                            r6count += v.getCount();
-                        }
-                    }
                     o1.put("size", total);
                     o1.put("r6count", r6count);
                     o1.put("r6xdcount", xiandinc);
                     o1.put("r6xdtotal", total);
                     String pj = "0";
-                    if (xiandinc != 0) {
-                        pj = new BigDecimal(total)
-                                .divide(new BigDecimal(xiandinc), 2, RoundingMode.HALF_UP)
-                                .toPlainString();
-                    }
                     o1.put("pj", pj);
                     String rate = "0";
-                    try {
-                        rate =
-                                new BigDecimal(r6count).multiply(new BigDecimal(100))
-                                        .divide(new BigDecimal(total), 2, RoundingMode.HALF_UP)
-                                        .toPlainString() + "%";
-                    } catch (Exception e) {
-                    }
-
                     o1.put("rate", rate);
                     o1.put("tr", c);
                     r.put("0", o1);
                 }
-                if (i == 1) {
+                {
                     Integer r6count = 0;
                     Integer total = mDian;
-                    for (PoolDataUserinfoVo v : collect.get(i)) {
-                        total += v.getCount();
-                        if (v.getRank() == 3) {
-                            r6count += v.getCount();
-                        }
-                    }
                     o2.put("size", total);
                     o2.put("r6count", r6count);
-                    o2.put("r6xdcount", xiandinm);
+                    o2.put("r6xdcount", xiandinc);
                     o2.put("r6xdtotal", total);
                     String pj = "0";
-                    if (xiandinm != 0) {
-                        pj = new BigDecimal(total)
-                                .divide(new BigDecimal(xiandinm), 2, RoundingMode.HALF_UP)
-                                .toPlainString();
-                    }
                     o2.put("pj", pj);
                     String rate = "0";
-                    try {
-                        rate =
-                                new BigDecimal(r6count).multiply(new BigDecimal(100))
-                                        .divide(new BigDecimal(total), 2, RoundingMode.HALF_UP)
-                                        .toPlainString() + "%";
-                    } catch (Exception e) {
-                    }
                     o2.put("rate", rate);
-                    o2.put("tr", m);
+                    o2.put("tr", c);
                     r.put("1", o2);
                 }
-            }
+            } else {
+                for (Integer i : collect.keySet()) {
+                    List<PoolDataUserinfoVo> poolDataUserinfoVos = collect.get(i);
+                    // 如果是角色
+                    if (poolDataUserinfoVos.getFirst().getType() == 0) {
+                        Integer r6count = 0;
+                        Integer total = cDian;
+                        for (PoolDataUserinfoVo v : poolDataUserinfoVos) {
+                            total += v.getCount();
+                            if (v.getRank() == 6) {
+                                r6count += v.getCount();
+                            }
+                        }
+                        o1.put("size", total);
+                        o1.put("r6count", r6count);
+                        o1.put("r6xdcount", xiandinc);
+                        o1.put("r6xdtotal", total);
+                        String pj = "0";
+                        if (xiandinc != 0) {
+                            pj = new BigDecimal(total)
+                                    .divide(new BigDecimal(xiandinc), 2, RoundingMode.HALF_UP)
+                                    .toPlainString();
+                        }
+                        o1.put("pj", pj);
+                        String rate = "0";
+                        try {
+                            rate =
+                                    new BigDecimal(r6count).multiply(new BigDecimal(100))
+                                            .divide(new BigDecimal(total), 2, RoundingMode.HALF_UP)
+                                            .toPlainString() + "%";
+                        } catch (Exception e) {
+                        }
 
+                        o1.put("rate", rate);
+                        o1.put("tr", c);
+                        r.put("0", o1);
+                    } else {
+                        Integer r6count = 0;
+                        Integer total = mDian;
+                        for (PoolDataUserinfoVo v : poolDataUserinfoVos) {
+                            total += v.getCount();
+                            if (v.getRank() == 3) {
+                                r6count += v.getCount();
+                            }
+                        }
+                        o2.put("size", total);
+                        o2.put("r6count", r6count);
+                        o2.put("r6xdcount", xiandinm);
+                        o2.put("r6xdtotal", total);
+                        String pj = "0";
+                        if (xiandinm != 0) {
+                            pj = new BigDecimal(total)
+                                    .divide(new BigDecimal(xiandinm), 2, RoundingMode.HALF_UP)
+                                    .toPlainString();
+                        }
+                        o2.put("pj", pj);
+                        String rate = "0";
+                        try {
+                            rate =
+                                    new BigDecimal(r6count).multiply(new BigDecimal(100))
+                                            .divide(new BigDecimal(total), 2, RoundingMode.HALF_UP)
+                                            .toPlainString() + "%";
+                        } catch (Exception e) {
+                        }
+                        o2.put("rate", rate);
+                        o2.put("tr", m);
+                        r.put("1", o2);
+                    }
+                }
+            }
             initPoolDataRank(r, uid, 1);
         }
 
