@@ -1,6 +1,8 @@
 package info.qianqiu.ashechoes.utils.http;
 
 import cn.hutool.extra.spring.SpringUtil;
+import com.alibaba.fastjson2.JSONObject;
+import info.qianqiu.ashechoes.controller.vo.bot.BotConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.util.MultiValueMap;
@@ -15,6 +17,7 @@ import java.net.URI;
 public class ReqUtils {
 
     private static final RestTemplate restTemplate = SpringUtil.getBean("restTemplate");
+    private static final BotConfig botConfig = SpringUtil.getBean("botConfig");
 
     public static String get(String url) {
         return get(url, true);
@@ -41,6 +44,51 @@ public class ReqUtils {
         HttpEntity<MultiValueMap<String, Object>> formEntity = new HttpEntity<MultiValueMap<String, Object>>(headers);
         ResponseEntity<String> exchange = restTemplate.exchange(uri, HttpMethod.GET, formEntity, String.class);
         return exchange.getBody();
+    }
+
+    public static String fpost(
+            String url,
+            String body
+    ) {
+        return fpost(url, body, null);
+    }
+
+    public static String fpost(
+            String url,
+            String body,
+            HttpHeaders headers
+    ) {
+        URI uri = URI.create(url);
+        if (headers == null) {
+            headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("accept", "*/*");
+        }
+        HttpEntity<String> request = new HttpEntity<String>(body, headers);
+
+        return restTemplate.postForObject(uri, request, String.class);
+    }
+
+    public static String botPost(String url,
+                                 String body
+                                 ) {
+        long systemTime = System.currentTimeMillis() / 1000;
+        // token过期时间是7200, 最后60S内可以直接刷新
+        if (botConfig.getTOKEN_EXPIRE_TIME() == 0L || (botConfig.getTOKEN_EXPIRE_TIME() - systemTime) < 60) {
+            String fpost = fpost(botConfig.getTokenUrl(), botConfig.getTokenParam());
+            JSONObject result = JSONObject.parseObject(fpost);
+            String token = result.getString("access_token");
+            botConfig.setAUTH_TOKEN(token);
+            botConfig.setTOKEN_EXPIRE_TIME(System.currentTimeMillis() / 1000 + 7200);
+        }
+        URI uri = URI.create(url);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("accept", "*/*");
+        headers.set("Authorization", "QQBot " + botConfig.getAUTH_TOKEN());
+        HttpEntity<String> request = new HttpEntity<String>(body, headers);
+
+        return restTemplate.postForObject(uri, request, String.class);
     }
 
 }

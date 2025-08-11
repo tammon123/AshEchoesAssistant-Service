@@ -4,6 +4,30 @@ import java.util.List;
 
 public class StringUtils {
 
+    public static String format(String format, Object... params) {
+        return java.lang.String.format(format, params);
+    }
+
+    public static String bytesToHex(byte[] signatureBytes) {
+        StringBuilder hexString = new StringBuilder(2 * signatureBytes.length);
+        for (byte b : signatureBytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
+    public static boolean isEmpty(String botToken) {
+        return botToken == null || botToken.isEmpty();
+    }
+
+    public static String toString(Object url) {
+        return url == null ? "" : url.toString();
+    }
+
     public static boolean isEmpty(final CharSequence str) {
         return str == null || str.isEmpty();
     }

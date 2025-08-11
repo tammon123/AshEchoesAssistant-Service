@@ -1,101 +1,108 @@
 package info.qianqiu.ashechoes.controller;
 
 import com.alibaba.fastjson2.JSONObject;
-import info.qianqiu.ashechoes.controller.vo.*;
-import info.qianqiu.ashechoes.controller.vo.bot.BotCallbackRequest;
-import info.qianqiu.ashechoes.controller.vo.bot.BotCallbackResponse;
+import info.qianqiu.ashechoes.controller.vo.bot.*;
+import info.qianqiu.ashechoes.utils.http.ReqUtils;
+import info.qianqiu.ashechoes.utils.string.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.i2p.crypto.eddsa.EdDSAEngine;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
-import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
-import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
-import org.springframework.beans.factory.annotation.Value;
+import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
+import org.bouncycastle.crypto.signers.Ed25519Signer;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.Signature;
-import java.util.HexFormat;
-
 @RestController
 @RequestMapping("/bot")
-@RequiredArgsConstructor
 @Slf4j
+@RequiredArgsConstructor
 public class BotController {
 
-    private static final EdDSAParameterSpec ED25519 = EdDSANamedCurveTable.getByName("Ed25519");
-    private static final HexFormat HEX = HexFormat.of();
+    private static final int ED25519_SEED_SIZE = 32; // ed25519.SeedSize = 32
 
-    @Value("${bot.appid}")
-    private String appId;
-
-    @Value("${bot.secret}")
-    private String botSecret;
+    private final BotConfig botSecret;
+    private final BotConfig botConfig;
 
     @PostMapping("/receive")
     public ResponseEntity<BotCallbackResponse> handleCallback(
-            @RequestHeader("X-Bot-Appid") String headerAppId,
             @RequestBody BotCallbackRequest request) {
-
         try {
-            // 1. 验证AppId
-            if (!appId.equals(headerAppId)) {
-                return ResponseEntity.status(403).build();
+            if (request.getOp() == 13) {
+                responseSign(request);
             }
-
-            // 2. 验证请求体
-            if (request.getD() == null ||
-                    request.getD().getPlain_token() == null ||
-                    request.getD().getEvent_ts() == null) {
-                return ResponseEntity.badRequest().build();
+            // 收消息
+            if (request.getOp() == 0) {
+                log.warn("接受消息:{}", JSONObject.toJSONString(request));
+                BotCallbackData d = request.getD();
+                BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
+                builder.content("你好").msg_id(d.getId()).msg_type(MsgTypeConstant.TXT).build();
+                String api = "v2/users/" + d.getUserOpenId() + "/messages";
+                if (d.groupChat()) {
+                    api = "v2/groups/" + d.getGroup_openid() + "/messages";
+                }
+                ReqUtils.botPost(botConfig.getSurl() + api, JSONObject.toJSONString(builder.build()));
             }
-
-            // 3. 生成私钥
-            EdDSAPrivateKey privateKey = generatePrivateKey(botSecret);
-
-            // 4. 构建签名消息
-            byte[] message = buildSignatureMessage(
-                    request.getD().getEvent_ts(),
-                    request.getD().getPlain_token()
-            );
-
-            // 5. 生成签名
-            String signature = generateSignature(privateKey, message);
-
-            // 6. 构建响应
-            BotCallbackResponse response = new BotCallbackResponse();
-            response.setPlain_token(request.getD().getPlain_token());
-            response.setSignature(signature);
-
-            return ResponseEntity.ok(response);
-
+            return ResponseEntity.ok(new BotCallbackResponse(
+                    "",
+                    ""
+            ));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
     }
 
-    private byte[] buildSignatureMessage(String eventTs, String plainToken) {
-        return (eventTs + plainToken).getBytes(StandardCharsets.UTF_8);
+    private ResponseEntity<BotCallbackResponse> responseSign(BotCallbackRequest request) {
+        BotCallbackData validationRequest = new BotCallbackData();
+        validationRequest.setEvent_ts(request.getD().getEvent_ts());
+        validationRequest.setPlain_token(request.getD().getPlain_token());
+
+        // 2. 生成种子
+        String seed = generateSeed(botSecret.getSecret()); // 替换实际密钥
+
+        // 3. 生成 Ed25519 私钥
+        Ed25519PrivateKeyParameters privateKey = generatePrivateKey(seed);
+
+        // 4. 生成签名
+        String signature = generateSignature(
+                privateKey,
+                validationRequest.getEvent_ts(),
+                validationRequest.getPlain_token()
+        );
+
+        // 5. 构建响应
+        return ResponseEntity.ok(new BotCallbackResponse(
+                validationRequest.getPlain_token(),
+                signature
+        ));
     }
 
-    private EdDSAPrivateKey generatePrivateKey(String botSecret) throws Exception {
-        MessageDigest sha512 = MessageDigest.getInstance("SHA-512");
-        byte[] hash = sha512.digest(botSecret.getBytes(StandardCharsets.UTF_8));
-
-        byte[] seed = new byte[32];
-        System.arraycopy(hash, 0, seed, 0, 32);
-
-        return new EdDSAPrivateKey(new EdDSAPrivateKeySpec(seed, ED25519));
+    // 生成符合长度的种子字符串
+    private String generateSeed(String botSecret) {
+        StringBuilder seedBuilder = new StringBuilder(botSecret);
+        while (seedBuilder.length() < ED25519_SEED_SIZE) {
+            seedBuilder.append(seedBuilder);
+        }
+        return seedBuilder.substring(0, ED25519_SEED_SIZE);
     }
 
-    private String generateSignature(EdDSAPrivateKey privateKey, byte[] message) throws Exception {
-        Signature signer = new EdDSAEngine(MessageDigest.getInstance("SHA-512"));
-        signer.initSign(privateKey);
-        signer.update(message);
-        return HEX.formatHex(signer.sign());
+    // 生成 Ed25519 私钥
+    private Ed25519PrivateKeyParameters generatePrivateKey(String seed) {
+        byte[] seedBytes = seed.getBytes();
+        return new Ed25519PrivateKeyParameters(seedBytes, 0);
+    }
+
+    // 生成签名
+    private String generateSignature(
+            Ed25519PrivateKeyParameters privateKey,
+            String eventTs,
+            String plainToken
+    ) {
+        Ed25519Signer signer = new Ed25519Signer();
+        signer.init(true, privateKey);
+        byte[] message = (eventTs + plainToken).getBytes();
+        signer.update(message, 0, message.length);
+        byte[] signatureBytes = signer.generateSignature();
+        // 将签名转换为十六进制字符串
+        return StringUtils.bytesToHex(signatureBytes);
     }
 
 }

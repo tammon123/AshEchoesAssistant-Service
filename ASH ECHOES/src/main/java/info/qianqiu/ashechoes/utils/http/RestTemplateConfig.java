@@ -161,16 +161,6 @@ public class RestTemplateConfig {
         return restTemplate(30000, 30000, true, true);
     }
 
-    @Bean("restNoReceive")
-    public RestTemplate restTemplate2() {
-        return restTemplate(2000, 2000, false, false);
-    }
-
-    @Bean("restNoLog")
-    public RestTemplate restTemplate3() {
-        return restTemplate(30000, 30000, false, false);
-    }
-
     private RestTemplate restTemplate(int conTimeout, int readTimeout, boolean reqLog, boolean resLog) {
         RestTemplate restTemplate = RestTemplateConfig.createRestTemplate(conTimeout, readTimeout, reqLog, resLog,
                 new ObjectMapper());

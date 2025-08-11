@@ -34,33 +34,27 @@ public class ResttemplateLogClientInterceptor implements ClientHttpRequestInterc
     }
 
     private void tranceRequest(HttpRequest request, byte[] body) throws UnsupportedEncodingException {
-        log.debug("=========================== request begin ===========================");
-        log.debug("uri : {}", request.getURI());
-        log.debug("headers : {}", request.getHeaders());
         if (needReqLog) {
-            log.debug("request body : {}", new String(body, StandardCharsets.UTF_8));
+            log.error("{};bd:{},hd:{}", request.getURI(),
+                    new String(body, StandardCharsets.UTF_8), request.getHeaders());
         } else {
-            log.debug("request body : 当前配置已省略日志");
+            log.error("{};hd:{};body:ignore", request.getURI(), request.getHeaders());
         }
-        log.debug("============================ request end ============================");
     }
 
     private void traceResponse(ClientHttpResponse httpResponse) throws IOException {
         StringBuilder inputStringBuilder = new StringBuilder();
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpResponse.getBody(), StandardCharsets.UTF_8));
+        BufferedReader bufferedReader =
+                new BufferedReader(new InputStreamReader(httpResponse.getBody(), StandardCharsets.UTF_8));
         String line = bufferedReader.readLine();
         while (line != null) {
             inputStringBuilder.append(line);
             line = bufferedReader.readLine();
         }
-        log.debug("============================ response begin ============================");
-        log.debug("Status code  : {}", httpResponse.getStatusCode());
-        log.debug("Headers      : {}", httpResponse.getHeaders());
         if (needResLog) {
-            log.debug("Response body: {}", inputStringBuilder);
+            log.error("bd:{};sc:{};hd:{};", inputStringBuilder,httpResponse.getStatusCode(), httpResponse.getHeaders());
         } else {
-            log.debug("Response body: 当前配置已省略");
+            log.error("bd:ignore;sc:{};hd:{};", httpResponse.getStatusCode(), httpResponse.getHeaders());
         }
-        log.debug("============================= response end =============================");
     }
 }
