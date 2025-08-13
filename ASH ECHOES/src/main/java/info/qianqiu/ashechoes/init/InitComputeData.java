@@ -17,6 +17,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +52,9 @@ public class InitComputeData implements CommandLineRunner {
     private final HashMap<String, Long> elementBehavior = new HashMap<>();
     private final ArrayList<Thanks> thanks = new ArrayList<>();
     private final ArrayList<CharacterInfoSkill> characterInfoSkills = new ArrayList<>();
+
+    private final ConcurrentHashMap<String, String> receiveCache = new ConcurrentHashMap<String, String>();
+    private final List<String> receiveMsgList = new ArrayList<>();
 
     private final String ASSETS_URL = SpringUtil.getBean(EnvConfig.class).getAssetsUrl();
     private final String ASSETS_VERSION = SpringUtil.getBean(EnvConfig.class).getAssetsVersion();
@@ -92,6 +96,8 @@ public class InitComputeData implements CommandLineRunner {
         characterAvatar.clear();
         memoryAvatar.clear();
         skillAvatar.clear();
+        receiveCache.clear();
+        receiveMsgList.clear();
         log.error("数据销毁");
     }
 
@@ -111,6 +117,31 @@ public class InitComputeData implements CommandLineRunner {
         initWebPoolDataInfo();
         initCommonAttrBehavior();
         log.error("数据初始化成功");
+    }
+
+    public boolean reciveBotMsg(String key) {
+        if (receiveCache.get(key) == null) {
+            // 添加新数据
+            receiveCache.put(key, "1");
+            receiveMsgList.add(key);
+
+            // 检查是否超出最大容量
+            if (receiveMsgList.size() > 100000) {
+                // 计算需要删除的数量（超出部分）
+                int exceedCount = receiveMsgList.size() - 100000;
+
+                // 从最早添加的数据开始删除
+                for (int i = 0; i < exceedCount; i++) {
+                    String oldestKey = receiveMsgList.getFirst();
+                    // 从缓存中删除
+                    receiveCache.remove(oldestKey);
+                    // 从顺序列表中删除
+                    receiveMsgList.removeFirst();
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     public List<Thanks> getAllThanks() {

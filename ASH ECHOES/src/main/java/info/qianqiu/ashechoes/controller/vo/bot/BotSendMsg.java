@@ -15,6 +15,6 @@ public class BotSendMsg {
     private Integer msg_type = 0;
     private String msg_id;
     private String event_id;
-    private BotMedia media;
+    private BotMediaResponse media;
 
 }

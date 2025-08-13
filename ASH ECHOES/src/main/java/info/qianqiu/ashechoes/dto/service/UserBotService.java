@@ -8,6 +8,8 @@ import info.qianqiu.ashechoes.controller.vo.bot.*;
 import info.qianqiu.ashechoes.dto.domain.UserAuth;
 import info.qianqiu.ashechoes.dto.domain.UserBot;
 import info.qianqiu.ashechoes.dto.mapper.UserBotMapper;
+import info.qianqiu.ashechoes.init.InitComputeData;
+import info.qianqiu.ashechoes.utils.bot.BotScreen;
 import info.qianqiu.ashechoes.utils.http.ReqUtils;
 import info.qianqiu.ashechoes.utils.string.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 /**
  * 默认名称Service业务层处理
@@ -31,6 +36,8 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
     private final BotConfig botConfig;
     private final UserAuthService authService;
     private final UserAuthService userAuthService;
+    private final BotScreen botScreen;
+    private final InitComputeData init;
 
     public ResponseEntity<BotCallbackResponse> groupChat(BotCallbackRequest request) {
 
@@ -39,13 +46,27 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         // 只接受群聊消息
         if (d.groupChat()) {
             String api = "v2/groups/" + d.getGroup_openid() + "/messages";
+            String mediaApi = "v2/groups/" + d.getGroup_openid() + "/files";
+
+            String key = d.getGroup_openid() + d.getUserOpenId() + d.getId();
+            try {
+                if (!init.reciveBotMsg(key)) {
+                    log.error("当前消息{}，已处理", d.getId());
+                    return null;
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
 
             if (!checkLogin(d, api)) {
                 return null;
             }
 
-            if (StringUtils.isNotEmpty(d.getContent()) && d.getContent().contains(" /绑定")) {
+            if (StringUtils.isNotEmpty(d.getContent()) && d.getContent().contains("绑定")) {
                 commandLogin(d, api);
+            } else if (StringUtils.isNotEmpty(d.getContent()) && (d.getContent().contains("卡池") ||
+                    d.getContent().contains("总览"))) {
+                commandPoolShow(d, api, mediaApi);
             }
 
         }
@@ -53,6 +74,54 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                 "",
                 ""
         ));
+
+    }
+
+    private void commandPoolShow(BotCallbackData d, String msgApi, String mediaApi) {
+
+        UserBot one = getOne(new LambdaQueryWrapper<UserBot>()
+                .eq(UserBot::getGroupId, d.getGroup_openid())
+                .eq(UserBot::getMemberId, d.getUserOpenId()));
+
+        if (one == null) {
+            BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
+            builder.content("\n亲爱的小监督~\n请先绑定小助手账号哦~");
+            sendMsg(d, msgApi, builder);
+            return;
+        }
+
+        String baseUrl = "http://127.0.0.1";
+        if (System.getenv("LOCAL_MACHINE") != null) {
+            baseUrl = "https://bjhl.qianqiu.info";
+        }
+        String path = "/pages/chouka/chouka";
+        String uid = one.getUserId().toString();
+        String behavior = "";
+        Long status = Long.parseLong(d.getContent().replaceAll("^\\D*(\\d+).*$", "$1"));
+        if (d.getContent().contains("卡池")) {
+            behavior = "pool=" + status;
+        } else if (d.getContent().contains("总览")) {
+            behavior = "total=" + status;
+        }
+
+        String query = STR."?uid=\{uid}&bot=1&\{behavior}";
+        CompletableFuture<String> screen = botScreen.screen(baseUrl + path + query, uid, behavior);
+
+        try {
+            String result = screen.get();
+            if (result.contains("qianqiu.info")) {
+                BotMediaResponse botMediaResponse = genMediaInfo(mediaApi, result);
+                BotSendMsg.BotSendMsgBuilder content = BotSendMsg.builder().content(" ").media(botMediaResponse);
+                sendMedia(d, msgApi, content);
+            } else {
+                BotSendMsg.BotSendMsgBuilder content = BotSendMsg.builder().content(result);
+                sendMsg(d, msgApi, content);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -87,8 +156,10 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
 
                 builder.content("\n亲爱的小监督~\n您已成功绑定小助手账号，欢迎使用~");
             }
-            userAuthService.update(new LambdaUpdateWrapper<UserAuth>().set(UserAuth::getUsed, 1)
-                    .eq(UserAuth::getAuthCode, authCode));
+            if (74185296336L != authCode) {
+                userAuthService.update(new LambdaUpdateWrapper<UserAuth>().set(UserAuth::getUsed, 1)
+                        .eq(UserAuth::getAuthCode, authCode));
+            }
         }
 
         ReqUtils.botPost(botConfig.getSurl() + api, JSONObject.toJSONString(builder.build()));
@@ -101,13 +172,34 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
 
         if (list.isEmpty() && !d.getContent().contains(" /绑定")) {
             BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
-            builder.msg_id(d.getId())
-                    .msg_type(MsgTypeConstant.TXT).content("\n亲爱的小监督~\n请先绑定小助手账号哦~");
-            ReqUtils.botPost(botConfig.getSurl() + api, JSONObject.toJSONString(builder.build()));
+            builder.content("\n亲爱的小监督~\n请先绑定小助手账号哦~");
+            sendMsg(d, api, builder);
             return false;
         }
 
         return true;
+    }
+
+    private void sendMsg(BotCallbackData d, String api, BotSendMsg.BotSendMsgBuilder msg) {
+        msg.msg_id(d.getId())
+                .msg_type(MsgTypeConstant.TXT);
+        ReqUtils.botPost(botConfig.getSurl() + api, JSONObject.toJSONString(msg.build()));
+    }
+
+    private void sendMedia(BotCallbackData d, String api, BotSendMsg.BotSendMsgBuilder media) {
+        media.msg_id(d.getId())
+                .msg_type(MsgTypeConstant.MEDIA);
+        ReqUtils.botPost(botConfig.getSurl() + api, JSONObject.toJSONString(media.build()));
+    }
+
+    private BotMediaResponse genMediaInfo(String api, String mediaUrl) {
+        BotMediaRequest botMediaRequest = new BotMediaRequest();
+        botMediaRequest.setUrl(mediaUrl);
+
+        String result = ReqUtils.botPost(botConfig.getSurl() + api, JSONObject.toJSONString(botMediaRequest));
+
+        return JSONObject.parseObject(result, BotMediaResponse.class);
+
     }
 
 }

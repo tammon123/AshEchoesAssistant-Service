@@ -67,7 +67,7 @@ public class PlaywrightPageUtil {
     private Page createNewPage() {
         // 为每个页面创建独立上下文，彻底隔离存储
         BrowserContext context = browser.newContext(new Browser.NewContextOptions()
-                .setViewportSize(1920, 1080));
+                .setViewportSize(350, 1080));
         Page page = context.newPage();
         configureResourceRouting(page);
         return page;
@@ -79,12 +79,12 @@ public class PlaywrightPageUtil {
         page.route("**/*", route -> {
             String url = route.request().url();
             String localFilePath = getLocalFilePath(url);
-
             // 如果是目标域名的资源且本地文件存在，则使用本地文件
             if (localFilePath != null) {
                 File localFile = new File(localFilePath);
                 if (localFile.exists() && localFile.isFile()) {
                     try {
+                        System.out.println("本地资源替换：" + localFilePath);
                         // 读取本地文件并返回
                         route.fulfill(new Route.FulfillOptions()
                                 .setPath(Paths.get(localFilePath))
@@ -163,11 +163,11 @@ public class PlaywrightPageUtil {
             page.waitForLoadState(LoadState.LOAD);
 
             // 2. 等待所有图片元素加载完成
-            page.waitForSelector("img", new Page.WaitForSelectorOptions()
-                    .setState(WaitForSelectorState.ATTACHED)
-                    .setTimeout(TimeUnit.SECONDS.toMillis(10)));
+//            page.waitForSelector("img", new Page.WaitForSelectorOptions()
+//                    .setState(WaitForSelectorState.ATTACHED)
+//                    .setTimeout(TimeUnit.SECONDS.toMillis(10)));
             // 4. 额外等待网络空闲
-            page.waitForLoadState(LoadState.NETWORKIDLE);
+//            page.waitForLoadState(LoadState.NETWORKIDLE);
 
             // 截图（按需配置参数）
             return page.screenshot(new Page.ScreenshotOptions()
