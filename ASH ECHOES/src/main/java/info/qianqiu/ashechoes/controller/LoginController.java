@@ -34,13 +34,19 @@ public class LoginController {
         return R.fail("未知命令");
     }
 
+    @GetMapping("/auth/{id}")
+    public R genAuthCode(@PathVariable("id") Long id) {
+        return userService.genAuthCode(id);
+    }
+
     @GetMapping("/user/ls/{id}")
-    public R userls(@PathVariable("id")String id) {
+    public R userls(@PathVariable("id") String id) {
         userService.update(new LambdaUpdateWrapper<User>()
-                        .set(User::getLastLogin, new Date())
+                .set(User::getLastLogin, new Date())
                 .eq(User::getUid, id));
         return R.ok();
     }
+
     @PostMapping("/user/modify")
     public R userModify(@RequestBody User user) {
         return userService.modify(user);

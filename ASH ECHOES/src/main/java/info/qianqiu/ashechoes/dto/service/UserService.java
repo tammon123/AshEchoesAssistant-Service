@@ -5,12 +5,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import info.qianqiu.ashechoes.dto.domain.User;
+import info.qianqiu.ashechoes.dto.domain.UserAuth;
 import info.qianqiu.ashechoes.dto.mapper.UserMapper;
 import info.qianqiu.ashechoes.utils.email.EmailUtils;
 import info.qianqiu.ashechoes.utils.http.R;
 import info.qianqiu.ashechoes.utils.id.Id;
 import info.qianqiu.ashechoes.utils.id.MD5;
 import info.qianqiu.ashechoes.utils.string.StringUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -25,7 +27,11 @@ import java.util.regex.Pattern;
  * @date 2024-08-30
  */
 @Service
+@RequiredArgsConstructor
 public class UserService extends ServiceImpl<UserMapper, User> {
+
+    private final UserBotService userBotService;
+    private final UserAuthService userAuthService;
 
     public R login(User user) {
         User one = getOne(new LambdaQueryWrapper<User>()
@@ -130,6 +136,18 @@ public class UserService extends ServiceImpl<UserMapper, User> {
                 .set(User::getPassword, MD5.ToMD5(user.getPassword())));
 
         return R.ok("该邮箱下所有账号密码已更新，请使用最新的密码登录");
+    }
+
+    public R genAuthCode(Long id) {
+        List<UserAuth> list = userAuthService.list(
+                new LambdaQueryWrapper<UserAuth>().eq(UserAuth::getUserId, id).eq(UserAuth::getUsed, 0));
+        if (list.isEmpty()) {
+            UserAuth build = UserAuth.builder().userId(id).authCode(Id.id()).build();
+            userAuthService.save(build);
+            return R.ok(build.getAuthCode()+"");
+        }else {
+            return R.ok(list.getFirst().getAuthCode()+"");
+        }
     }
 
     static class EmailValidator {
