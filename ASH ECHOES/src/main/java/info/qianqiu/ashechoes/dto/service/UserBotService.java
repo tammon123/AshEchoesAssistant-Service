@@ -180,7 +180,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
             }
         }
 
-        ReqUtils.botPost(botConfig.getSurl() + api, JSONObject.toJSONString(builder.build()));
+        ReqUtils.botPost(botConfig.getUrl() + api, JSONObject.toJSONString(builder.build()));
     }
 
     private boolean checkLogin(BotCallbackData d, String api) {
@@ -201,20 +201,20 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
     private void sendMsg(BotCallbackData d, String api, BotSendMsg.BotSendMsgBuilder msg) {
         msg.msg_id(d.getId())
                 .msg_type(MsgTypeConstant.TXT);
-        ReqUtils.botPost(botConfig.getSurl() + api, JSONObject.toJSONString(msg.build()));
+        ReqUtils.botPost(botConfig.getUrl() + api, JSONObject.toJSONString(msg.build()));
     }
 
     private void sendMedia(BotCallbackData d, String api, BotSendMsg.BotSendMsgBuilder media) {
         media.msg_id(d.getId())
                 .msg_type(MsgTypeConstant.MEDIA);
-        ReqUtils.botPost(botConfig.getSurl() + api, JSONObject.toJSONString(media.build()));
+        ReqUtils.botPost(botConfig.getUrl() + api, JSONObject.toJSONString(media.build()));
     }
 
     private BotMediaResponse genMediaInfo(String api, String mediaUrl) {
         BotMediaRequest botMediaRequest = new BotMediaRequest();
         botMediaRequest.setUrl(mediaUrl);
 
-        String result = ReqUtils.botPost(botConfig.getSurl() + api, JSONObject.toJSONString(botMediaRequest));
+        String result = ReqUtils.botPost(botConfig.getUrl() + api, JSONObject.toJSONString(botMediaRequest));
 
         return JSONObject.parseObject(result, BotMediaResponse.class);
 
