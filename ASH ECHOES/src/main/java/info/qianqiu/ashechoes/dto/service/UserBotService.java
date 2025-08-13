@@ -54,7 +54,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                     log.error("当前消息{}，已处理", d.getId());
                     return null;
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
@@ -90,7 +90,25 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
             return;
         }
 
-        String baseUrl = "http://127.0.0.1";
+        if (d.getContent().contains("卡池") && d.getContent().contains("list")) {
+            String result = "\n /卡池 0（定向共鸣）" +
+                    "\n /卡池 1（定向潜航）" +
+                    "\n /卡池 2（联合共鸣/阶梯卡池）" +
+                    "\n /卡池 3（常态共鸣）" +
+                    "\n /卡池 4（寻迹潜航/先觉潜航）" +
+                    "\n /卡池 5（识海甄录）";
+            BotSendMsg.BotSendMsgBuilder content = BotSendMsg.builder().content(result);
+            sendMsg(d, msgApi, content);
+            return;
+        } else if (d.getContent().contains("总览") && d.getContent().contains("list")) {
+            String result = "\n /总览 0（查看所有角色）" +
+                    "\n /总览 1（查看所有烙痕）";
+            BotSendMsg.BotSendMsgBuilder content = BotSendMsg.builder().content(result);
+            sendMsg(d, msgApi, content);
+            return;
+        }
+
+        String baseUrl = "https://bjhl.qianqiu.info";
         if (System.getenv("LOCAL_MACHINE") != null) {
             baseUrl = "https://bjhl.qianqiu.info";
         }
