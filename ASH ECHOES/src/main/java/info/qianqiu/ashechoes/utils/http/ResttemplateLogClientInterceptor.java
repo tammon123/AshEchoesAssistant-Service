@@ -17,16 +17,9 @@ import java.nio.charset.StandardCharsets;
 @NoArgsConstructor
 public class ResttemplateLogClientInterceptor implements ClientHttpRequestInterceptor {
 
-    private boolean needReqLog = true;
-    private boolean needResLog = true;
-
-    ResttemplateLogClientInterceptor(boolean needReqLog, boolean needResLog) {
-        this.needReqLog = needReqLog;
-        this.needResLog = needResLog;
-    }
-
     @Override
-    public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+    public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution)
+            throws IOException {
         tranceRequest(request, body);
         ClientHttpResponse response = execution.execute(request, body);
         traceResponse(response);
@@ -34,12 +27,8 @@ public class ResttemplateLogClientInterceptor implements ClientHttpRequestInterc
     }
 
     private void tranceRequest(HttpRequest request, byte[] body) throws UnsupportedEncodingException {
-        if (needReqLog) {
-            log.info("{};bd:{},hd:{}", request.getURI(),
-                    new String(body, StandardCharsets.UTF_8), request.getHeaders());
-        } else {
-            log.info("{};hd:{};body:ignore", request.getURI(), request.getHeaders());
-        }
+        log.info("{};bd:{},hd:{}", request.getURI(),
+                new String(body, StandardCharsets.UTF_8), request.getHeaders());
     }
 
     private void traceResponse(ClientHttpResponse httpResponse) throws IOException {
@@ -51,10 +40,6 @@ public class ResttemplateLogClientInterceptor implements ClientHttpRequestInterc
             inputStringBuilder.append(line);
             line = bufferedReader.readLine();
         }
-        if (needResLog) {
-            log.info("bd:{};sc:{};hd:{};", inputStringBuilder,httpResponse.getStatusCode(), httpResponse.getHeaders());
-        } else {
-            log.info("bd:ignore;sc:{};hd:{};", httpResponse.getStatusCode(), httpResponse.getHeaders());
-        }
+        log.info("bd:{};sc:{};hd:{};", inputStringBuilder, httpResponse.getStatusCode(), httpResponse.getHeaders());
     }
 }

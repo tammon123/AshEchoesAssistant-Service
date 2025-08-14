@@ -100,9 +100,13 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         String behavior = "";
         if (d.getContent().contains("角色")) {
             behavior = "total=0";
-        }else if (d.getContent().contains("烙痕")) {
+        } else if (d.getContent().contains("烙痕")) {
             behavior = "total=1";
         }
+
+        BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
+        builder.content("\n亲爱的小监督~\n请等待......\n正在查询抽卡总览记录~").msg_seq(999);
+        sendMsg(d, msgApi, builder);
 
         String query = STR."?uid=\{uid}&bot=1&\{behavior}";
         CompletableFuture<String> screen = botScreen.screen(baseUrl + path + query, uid, behavior);
@@ -147,6 +151,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         if (d.getContent().contains("卡池") && d.getContent().replaceAll("/卡池", "").trim().isEmpty()) {
             builder.content(poolListMsg);
             sendMsg(d, msgApi, builder);
+            return;
         }
 
         if (d.getContent().contains("卡池") && d.getContent().contains("list")) {
@@ -166,6 +171,9 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         if (d.getContent().contains("卡池")) {
             behavior = "pool=" + status;
         }
+
+        builder.content("\n亲爱的小监督~\n请等待......\n正在查询卡池记录~").msg_seq(999);
+        sendMsg(d, msgApi, builder);
 
         String query = STR."?uid=\{uid}&bot=1&\{behavior}";
         CompletableFuture<String> screen = botScreen.screen(baseUrl + path + query, uid, behavior);

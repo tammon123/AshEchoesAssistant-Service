@@ -59,7 +59,7 @@ public class RestTemplateConfig {
      * @return
      */
     public static RestTemplate createRestTemplate(int connectionTimeoutMs, int readTimeoutMs,
-                                                  boolean needReqLogs, boolean needResLogs, ObjectMapper objectMapper) {
+                                                  ObjectMapper objectMapper) {
 
         HttpClientBuilder clientBuilder = HttpClients.custom();
 
@@ -114,7 +114,7 @@ public class RestTemplateConfig {
         // 添加自定义拦截器
         List<ClientHttpRequestInterceptor> interceptors =
                 new ArrayList<ClientHttpRequestInterceptor>();
-        interceptors.add(new ResttemplateLogClientInterceptor(needReqLogs, needResLogs));
+        interceptors.add(new ResttemplateLogClientInterceptor());
         restTemplate.setInterceptors(interceptors);
         //提供对传出/传入流的缓冲,可以让响应body多次读取(如果不配置,拦截器读取了Response流,再响应数据时会返回body=null)
         restTemplate.setRequestFactory(new BufferingClientHttpRequestFactory(httpRequestFactory));
@@ -158,20 +158,16 @@ public class RestTemplateConfig {
 
     @Bean("restTemplate")
     public RestTemplate commonReq() {
-        return restTemplate(30000, 30000, true, true);
+        return restTemplate(30000, 30000);
     }
 
-    private RestTemplate restTemplate(int conTimeout, int readTimeout, boolean reqLog, boolean resLog) {
-        RestTemplate restTemplate = RestTemplateConfig.createRestTemplate(conTimeout, readTimeout, reqLog, resLog,
-                new ObjectMapper());
+    private RestTemplate restTemplate(int conTimeout, int readTimeout) {
+        RestTemplate restTemplate = RestTemplateConfig.createRestTemplate(conTimeout, readTimeout, new ObjectMapper());
         //配置自定义的interceptor拦截器
         //使用restTemplate远程调用防止400和401导致报错而获取不到正确反馈信息
         restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
             @Override
             public void handleError(ClientHttpResponse response) throws IOException {
-                if (response.getStatusCode().value() != 400 && response.getStatusCode().value() != 401) {
-                }                    super.handleError(response);
-
             }
         });
         return restTemplate;
