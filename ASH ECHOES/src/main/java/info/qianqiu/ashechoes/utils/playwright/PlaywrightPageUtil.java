@@ -110,7 +110,7 @@ public class PlaywrightPageUtil {
     // 创建新页面（保持原有逻辑）
     private Page createNewPage() {
         BrowserContext context = browser.newContext(new Browser.NewContextOptions()
-                .setViewportSize(350, 700));
+                .setViewportSize(350, 350));
         Page page = context.newPage();
         configureResourceRouting(page);
         return page;

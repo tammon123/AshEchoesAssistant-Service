@@ -61,12 +61,17 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
             if (!checkLogin(d, api)) {
                 return null;
             }
-
-            if (StringUtils.isNotEmpty(d.getContent()) && d.getContent().contains("绑定")) {
+            if (" ".equals(d.getContent()) || StringUtils.isEmpty(d.getContent().trim())) {
+                BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
+                builder.content(
+                        "\n亲爱的小监督~\n欢迎使用白荆小助手~\n输入对应指令可直接获取该指令帮助信息~\n如有建议，欢迎加入白荆回廊综合交流群：865686593");
+                sendMsg(d, api, builder);
+            } else if (d.getContent().contains("绑定")) {
                 commandLogin(d, api);
-            } else if (StringUtils.isNotEmpty(d.getContent()) && (d.getContent().contains("卡池") ||
-                    d.getContent().contains("总览"))) {
+            } else if ((d.getContent().contains("卡池"))) {
                 commandPoolShow(d, api, mediaApi);
+            } else if ((d.getContent().contains("全部抽取角色") || d.getContent().contains("全部抽取烙痕"))) {
+                commandAllShow(d, api, mediaApi);
             }
 
         }
@@ -77,6 +82,48 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
 
     }
 
+    private void commandAllShow(BotCallbackData d, String msgApi, String mediaApi) {
+        UserBot one = getOne(new LambdaQueryWrapper<UserBot>()
+                .eq(UserBot::getGroupId, d.getGroup_openid())
+                .eq(UserBot::getMemberId, d.getUserOpenId()));
+
+        if (one == null) {
+            BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
+            builder.content("\n亲爱的小监督~\n请先使用/绑定指令，绑定小助手账号哦~");
+            sendMsg(d, msgApi, builder);
+            return;
+        }
+
+        String baseUrl = "https://bjhl.qianqiu.info";
+        String path = "/pages/chouka/chouka";
+        String uid = one.getUserId().toString();
+        String behavior = "";
+        if (d.getContent().contains("角色")) {
+            behavior = "total=0";
+        }else if (d.getContent().contains("烙痕")) {
+            behavior = "total=1";
+        }
+
+        String query = STR."?uid=\{uid}&bot=1&\{behavior}";
+        CompletableFuture<String> screen = botScreen.screen(baseUrl + path + query, uid, behavior);
+
+        try {
+            String result = screen.get();
+            if (result.contains("qianqiu.info")) {
+                BotMediaResponse botMediaResponse = genMediaInfo(mediaApi, result);
+                BotSendMsg.BotSendMsgBuilder content = BotSendMsg.builder().content(" ").media(botMediaResponse);
+                sendMedia(d, msgApi, content);
+            } else {
+                BotSendMsg.BotSendMsgBuilder content = BotSendMsg.builder().content(result);
+                sendMsg(d, msgApi, content);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void commandPoolShow(BotCallbackData d, String msgApi, String mediaApi) {
 
         UserBot one = getOne(new LambdaQueryWrapper<UserBot>()
@@ -85,26 +132,26 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
 
         if (one == null) {
             BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
-            builder.content("\n亲爱的小监督~\n请先绑定小助手账号哦~");
+            builder.content("\n亲爱的小监督~\n请先使用/绑定指令，绑定小助手账号哦~");
             sendMsg(d, msgApi, builder);
             return;
         }
+        String poolListMsg = "\n /卡池 0（定向共鸣）" +
+                "\n /卡池 1（定向潜航）" +
+                "\n /卡池 2（联合共鸣/阶梯卡池）" +
+                "\n /卡池 3（常态共鸣）" +
+                "\n /卡池 4（寻迹潜航/先觉潜航）" +
+                "\n /卡池 5（识海甄录）";
+
+        BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
+        if (d.getContent().contains("卡池") && d.getContent().replaceAll("/卡池", "").trim().isEmpty()) {
+            builder.content(poolListMsg);
+            sendMsg(d, msgApi, builder);
+        }
 
         if (d.getContent().contains("卡池") && d.getContent().contains("list")) {
-            String result = "\n /卡池 0（定向共鸣）" +
-                    "\n /卡池 1（定向潜航）" +
-                    "\n /卡池 2（联合共鸣/阶梯卡池）" +
-                    "\n /卡池 3（常态共鸣）" +
-                    "\n /卡池 4（寻迹潜航/先觉潜航）" +
-                    "\n /卡池 5（识海甄录）";
-            BotSendMsg.BotSendMsgBuilder content = BotSendMsg.builder().content(result);
-            sendMsg(d, msgApi, content);
-            return;
-        } else if (d.getContent().contains("总览") && d.getContent().contains("list")) {
-            String result = "\n /总览 0（查看所有角色）" +
-                    "\n /总览 1（查看所有烙痕）";
-            BotSendMsg.BotSendMsgBuilder content = BotSendMsg.builder().content(result);
-            sendMsg(d, msgApi, content);
+            builder.content(poolListMsg);
+            sendMsg(d, msgApi, builder);
             return;
         }
 
@@ -118,8 +165,6 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         Long status = Long.parseLong(d.getContent().replaceAll("^\\D*(\\d+).*$", "$1"));
         if (d.getContent().contains("卡池")) {
             behavior = "pool=" + status;
-        } else if (d.getContent().contains("总览")) {
-            behavior = "total=" + status;
         }
 
         String query = STR."?uid=\{uid}&bot=1&\{behavior}";
@@ -145,8 +190,10 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
 
     private void commandLogin(BotCallbackData d, String api) {
         BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
-        builder.msg_id(d.getId())
-                .msg_type(MsgTypeConstant.TXT);
+        if (d.getContent().replaceAll("/绑定", "").trim().isEmpty()) {
+            builder.content("\n亲爱的小监督~\n请先绑定小助手账号哦~");
+            sendMsg(d, api, builder);
+        }
         Long authCode = Long.parseLong(d.getContent().replaceAll("^\\D*(\\d+).*$", "$1"));
         List<UserAuth> list = authService.list(new LambdaQueryWrapper<UserAuth>()
                 .eq(UserAuth::getAuthCode, authCode)
@@ -179,8 +226,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                         .eq(UserAuth::getAuthCode, authCode));
             }
         }
-
-        ReqUtils.botPost(botConfig.getUrl() + api, JSONObject.toJSONString(builder.build()));
+        sendMsg(d, api, builder);
     }
 
     private boolean checkLogin(BotCallbackData d, String api) {
@@ -190,7 +236,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
 
         if (list.isEmpty() && !d.getContent().contains(" /绑定")) {
             BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
-            builder.content("\n亲爱的小监督~\n请先绑定小助手账号哦~");
+            builder.content("\n亲爱的小监督~\n请先使用/绑定指令，绑定小助手账号哦~");
             sendMsg(d, api, builder);
             return false;
         }

@@ -71,15 +71,21 @@ public class ReqUtils {
 
     public static String botPost(String url,
                                  String body
-                                 ) {
+    ) {
+        return botPost(url, body, 0);
+    }
+
+    public static String botPost(String url,
+                                 String body,
+                                 int max
+    ) {
+        if (max > 2) {
+            return "{}";
+        }
         long systemTime = System.currentTimeMillis() / 1000;
         // token过期时间是7200, 最后60S内可以直接刷新
         if (botConfig.getTOKEN_EXPIRE_TIME() == 0L || (botConfig.getTOKEN_EXPIRE_TIME() - systemTime) < 60) {
-            String fpost = fpost(botConfig.getTokenUrl(), botConfig.getTokenParam());
-            JSONObject result = JSONObject.parseObject(fpost);
-            String token = result.getString("access_token");
-            botConfig.setAUTH_TOKEN(token);
-            botConfig.setTOKEN_EXPIRE_TIME(System.currentTimeMillis() / 1000 + 7200);
+            refreshBotToken();
         }
         URI uri = URI.create(url);
         HttpHeaders headers = new HttpHeaders();
@@ -87,8 +93,23 @@ public class ReqUtils {
         headers.set("accept", "*/*");
         headers.set("Authorization", "QQBot " + botConfig.getAUTH_TOKEN());
         HttpEntity<String> request = new HttpEntity<String>(body, headers);
+//        {"message":"token not exist or expire","code":11244,"err_code":11244,"trace_id":"44f01fbc8ad9416bb2bf40a07e69ef10"}
+        String resul = restTemplate.postForObject(uri, request, String.class);
+        max += 1;
+        JSONObject jo = JSONObject.parseObject(resul);
+        if (jo != null && "11244".equals(jo.getString("code"))) {
+            refreshBotToken();
+            resul = botPost(url, body, max);
+        }
+        return resul;
+    }
 
-        return restTemplate.postForObject(uri, request, String.class);
+    public static void refreshBotToken() {
+        String fpost = fpost(botConfig.getTokenUrl(), botConfig.getTokenParam());
+        JSONObject result = JSONObject.parseObject(fpost);
+        String token = result.getString("access_token");
+        botConfig.setAUTH_TOKEN(token);
+        botConfig.setTOKEN_EXPIRE_TIME(System.currentTimeMillis() / 1000 + 7200);
     }
 
 }

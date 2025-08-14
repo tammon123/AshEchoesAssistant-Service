@@ -126,9 +126,9 @@ public class InitComputeData implements CommandLineRunner {
             receiveMsgList.add(key);
 
             // 检查是否超出最大容量
-            if (receiveMsgList.size() > 100000) {
+            if (receiveMsgList.size() > 10000) {
                 // 计算需要删除的数量（超出部分）
-                int exceedCount = receiveMsgList.size() - 100000;
+                int exceedCount = receiveMsgList.size() - 10000;
 
                 // 从最早添加的数据开始删除
                 for (int i = 0; i < exceedCount; i++) {
