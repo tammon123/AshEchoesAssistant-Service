@@ -22,7 +22,7 @@ public class PlaywrightPageUtil {
 
     private final Browser browser;
     private final ConcurrentLinkedQueue<Page> pagePool = new ConcurrentLinkedQueue<>();
-    private static final int POOL_SIZE = 20;
+    private static final int POOL_SIZE = 30;
     private static final String LOCAL_RESOURCE_DIR = "/home/www/qianqiu/";
     // 新增：重试次数配置
     private static final int MAX_RETRY = 3;

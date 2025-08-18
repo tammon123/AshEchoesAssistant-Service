@@ -199,7 +199,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
     private void commandLogin(BotCallbackData d, String api) {
         BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
         if (d.getContent().replaceAll("/绑定", "").trim().isEmpty()) {
-            builder.content("\n亲爱的小监督~\n请先绑定小助手账号哦~");
+            builder.content("\n亲爱的小监督~\n请先前往网页端获取授权码，然后绑定小助手账号哦~");
             sendMsg(d, api, builder);
         }
         Long authCode = Long.parseLong(d.getContent().replaceAll("^\\D*(\\d+).*$", "$1"));

@@ -9,7 +9,7 @@
     <!-- 日志基准目录，相对于Tomcat，也可定义绝对目录 -->
     <property name="log.base" value="/home/java/logs"/>
     <property name="log.pattern"
-              value="%blue(%d{yyyy-MM-dd HH:mm:ss}) %magenta(%-5level) %cyan(%msg) %red(%X{traceId}) %blue(%X{spanId}) %yellow([%thread]) %green([%class] [%method] [%line]) %n"/>
+              value="%blue(%d{yyyy-MM-dd HH:mm:ss}) %magenta(%-5level) %cyan(%msg) %green([%class] [%method] [%line]) %n"/>
     <property name="nog.pattern"
               value="%d{yyyy-MM-dd HH:mm:ss} %-5level %msg %X{traceId} %X{spanId} [%thread] [%class] [%method] [%line] %n"/>
     <jmxConfigurator/>
@@ -58,7 +58,7 @@
             <cleanHistoryOnStart>false</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
-            <pattern>${nog.pattern}</pattern>
+            <pattern>${log.pattern}</pattern>
             <charset class="java.nio.charset.Charset">utf-8</charset>
         </encoder>
     </appender>
@@ -78,7 +78,7 @@
             <cleanHistoryOnStart>false</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
-            <pattern>${nog.pattern}</pattern>
+            <pattern>${log.pattern}</pattern>
             <charset class="java.nio.charset.Charset">utf-8</charset>
         </encoder>
     </appender>
@@ -98,7 +98,7 @@
             <cleanHistoryOnStart>false</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
-            <pattern>${nog.pattern}</pattern>
+            <pattern>${log.pattern}</pattern>
             <charset class="java.nio.charset.Charset">utf-8</charset>
         </encoder>
     </appender>
