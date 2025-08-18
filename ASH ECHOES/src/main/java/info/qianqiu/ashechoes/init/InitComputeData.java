@@ -98,7 +98,7 @@ public class InitComputeData implements CommandLineRunner {
         skillAvatar.clear();
         receiveCache.clear();
         receiveMsgList.clear();
-        log.error("数据销毁");
+        log.info("数据销毁");
     }
 
     public void init() {
@@ -116,7 +116,7 @@ public class InitComputeData implements CommandLineRunner {
         initCharacterAllAttackBehavor();
         initWebPoolDataInfo();
         initCommonAttrBehavior();
-        log.error("数据初始化成功");
+        log.info("数据初始化成功");
     }
 
     public boolean reciveBotMsg(String key) {

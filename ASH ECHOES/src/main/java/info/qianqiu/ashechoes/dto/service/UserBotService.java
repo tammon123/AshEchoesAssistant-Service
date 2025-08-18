@@ -51,7 +51,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
             String key = d.getGroup_openid() + d.getUserOpenId() + d.getId();
             try {
                 if (!init.reciveBotMsg(key)) {
-                    log.error("当前消息{}，已处理", d.getId());
+                    log.info("当前消息{}，已处理", d.getId());
                     return null;
                 }
             } catch (Exception e) {

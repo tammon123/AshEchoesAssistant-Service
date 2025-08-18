@@ -1036,7 +1036,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
     }
 
     public R postDataByToken(String uid, String token) {
-        log.error("H5用户{}申请导入:{}", uid, token);
+        log.info("H5用户{}申请导入:{}", uid, token);
         boolean b = userStatusMap.putIfAbsent(uid, true) == null;
         if (!b) {
             return R.fail("请勿重复提交");
@@ -1091,7 +1091,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
             }
             VThread.submit(() -> {
                 try {
-                    log.error("用户{}总预插入数据:{}条", uid, poolData.size());
+                    log.info("用户{}总预插入数据:{}条", uid, poolData.size());
                     int count = 0;
                     ArrayList<PoolData> temp = new ArrayList<>();
                     for (PoolData o : poolData) {
@@ -1099,14 +1099,14 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                         // 每收集300条记录就进行一次批量保存
                         if (temp.size() >= INSERT_COUNT) {
                             count += INSERT_COUNT;
-                            log.error("用户{}插入:{}条", uid, count);
+                            log.info("用户{}插入:{}条", uid, count);
                             poolDataMapper.insert(temp); // 批量保存
                             temp.clear(); // 清空列表以准备下一批
                         }
                     }
                     // 处理剩余的数据（如果不足100条）
                     if (!temp.isEmpty()) {
-                        log.error("用户{}总插入数据结束:{}条", uid, count + temp.size());
+                        log.info("用户{}总插入数据结束:{}条", uid, count + temp.size());
                         poolDataMapper.insert(temp); // 批量保存
                     }
                 } catch (Exception e) {
@@ -1226,7 +1226,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                     }
                     JSONObject pol = init.poolData.getJSONObject(oo.getString("poolId"));
                     if (pol == null) {
-                        log.error("没有找到对应角色池子:{}", oo.getString("poolId"));
+                        log.info("没有找到对应角色池子:{}", oo.getString("poolId"));
                         pol = new JSONObject();
                         pol.put("name", "角色池" + oo.getString("poolId") + "(待开发者同步)");
                     }
@@ -1249,7 +1249,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         } catch (Exception e) {
             log.info("{}", e.getMessage());
             e.printStackTrace();
-            log.error("人物数据导入出错{}:{}:{}", uid, starttime, endtime);
+            log.info("人物数据导入出错{}:{}:{}", uid, starttime, endtime);
         }
 
         // 打印响应
@@ -1309,7 +1309,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                         }
                         JSONObject pol = init.poolData.getJSONObject(oo.getString("poolId"));
                         if (pol == null) {
-                            log.error("没有找到对应烙痕池子:{}", oo.getString("poolId"));
+                            log.info("没有找到对应烙痕池子:{}", oo.getString("poolId"));
                             pol = new JSONObject();
                             pol.put("name", "烙痕池" + oo.getString("poolId") + "(待开发者同步)");
                         }
@@ -1339,7 +1339,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            log.error("烙痕数据导入出错{}:{}:{}", uid, starttime, endtime);
+            log.info("烙痕数据导入出错{}:{}:{}", uid, starttime, endtime);
         }
         return result;
     }

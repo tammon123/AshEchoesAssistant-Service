@@ -204,7 +204,7 @@ public class PoolDataController {
         } catch (Exception e) {
             return R.fail("当前账号异常，请重新登录~");
         }
-        log.error("删除数据:{}提交申请", uid);
+        log.info("删除数据:{}提交申请", uid);
         VThread.submit(() -> {
             poolDataService.remove(new LambdaQueryWrapper<PoolData>().eq(PoolData::getUid, uid));
             poolDataRankService.remove(new LambdaQueryWrapper<PoolDataRank>().eq(PoolDataRank::getUid, uid));

@@ -99,7 +99,7 @@ public class ComputeSkillProcess {
                         norepeatSkills.add(init.getSkill((sid)));
                     }
                 } catch (Exception e) {
-                    log.error("获取潜像错误：{},{}", e.getMessage(), sl);
+                    log.info("获取潜像错误：{},{}", e.getMessage(), sl);
                 }
             }
         }

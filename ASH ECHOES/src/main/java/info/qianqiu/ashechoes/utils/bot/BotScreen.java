@@ -19,7 +19,7 @@ public class BotScreen {
 
     public CompletableFuture<String> screen(String url, String uid, String behavior) {
         FileOutputStream fos = null;
-        log.error("截图路径：{}", url);
+        log.info("截图路径：{}", url);
         try {
             byte[] imageData = pageUtil.screenshot(url);
             if (imageData == null || imageData.length == 0) {
