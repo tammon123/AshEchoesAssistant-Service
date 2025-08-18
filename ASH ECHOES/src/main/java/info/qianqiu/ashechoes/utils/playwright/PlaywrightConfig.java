@@ -1,6 +1,7 @@
 package info.qianqiu.ashechoes.utils.playwright;
 
 import com.microsoft.playwright.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -8,6 +9,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
+@Slf4j
 public class PlaywrightConfig {
 
     // 全局唯一的 Playwright 实例
@@ -36,6 +38,7 @@ public class PlaywrightConfig {
                     .setTimeout(TimeUnit.SECONDS.toMillis(30));
 
             browser = playwright.chromium().launch(options);
+            log.info("playwright启动了{}","");
         }
         return browser;
     }

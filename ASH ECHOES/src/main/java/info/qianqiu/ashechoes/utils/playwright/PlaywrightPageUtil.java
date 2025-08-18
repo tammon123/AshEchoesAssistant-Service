@@ -22,7 +22,7 @@ public class PlaywrightPageUtil {
 
     private final Browser browser;
     private final ConcurrentLinkedQueue<Page> pagePool = new ConcurrentLinkedQueue<>();
-    private static final int POOL_SIZE = 30;
+    private static final int POOL_SIZE = 20;
     private static final String LOCAL_RESOURCE_DIR = "/home/www/qianqiu/";
     // 新增：重试次数配置
     private static final int MAX_RETRY = 3;
@@ -88,8 +88,6 @@ public class PlaywrightPageUtil {
         try {
             // 通过访问页面上下文判断是否已关闭
             page.context();
-            // 尝试获取页面标题（轻量操作）
-            page.title();
             return true;
         } catch (PlaywrightException e) {
             return false;
