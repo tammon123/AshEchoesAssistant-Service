@@ -500,6 +500,7 @@ public class InitComputeData implements CommandLineRunner {
             characterByName.put(d.getName(), d);
             Character simple = new Character();
             simple.setAvatar(d.getAvatar());
+            simple.setSName(d.getSName());
             simple.setCharacterId(d.getCharacterId());
             simple.setElement(d.getElement());
             simple.setRole(d.getRole());
@@ -540,6 +541,7 @@ public class InitComputeData implements CommandLineRunner {
             memoryAvatar.put(d.getName(), d.getImg());
             Memory simple = new Memory();
             BeanUtils.copyProperties(d, simple);
+            simple.setSName(simple.getName());
             simple.setSkills(null);
             simple.setValue(null);
             simpleMemoryByNameGroup.put(simple.getName(), simple);

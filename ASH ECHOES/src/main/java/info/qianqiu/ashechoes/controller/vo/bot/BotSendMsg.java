@@ -13,6 +13,7 @@ public class BotSendMsg {
 
     private String content = " ";
     private Integer msg_type = 0;
+    private BotMarkdown markdown;
     private String msg_id;
     private String event_id;
     private Integer msg_seq = 1;

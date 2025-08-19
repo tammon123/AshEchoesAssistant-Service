@@ -29,6 +29,7 @@ public class Skill {
 
     /** 乘区描述 */
     private String name;
+    private String sName;
     // 暂时忽略这个
     @TableField(exist = false)
     @JsonIgnore
@@ -91,5 +92,9 @@ public class Skill {
     @Override
     public int hashCode() {
         return skillId.hashCode();
+    }
+
+    public String getWikiUrl() {
+        return "https://wiki.biligame.com/bjhl/刻印技能/"+name;
     }
 }

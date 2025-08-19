@@ -32,6 +32,7 @@ public class Character {
 
     /** 名称 */
     private String name;
+    private String sName;
 
     /** 基础攻击力加成 */
     private BigDecimal attack;
@@ -85,5 +86,9 @@ public class Character {
     @TableLogic
     @JsonIgnore
     private Long del;
+
+    public String getWikiUrl() {
+        return "https://wiki.biligame.com/bjhl/同调者/"+name;
+    }
 
 }

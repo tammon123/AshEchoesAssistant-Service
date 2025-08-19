@@ -28,6 +28,7 @@ public class Memory {
 
     /** 烙痕名称 */
     private String name;
+    private String sName;
 
     /** 烙痕品质 */
     @TableField("`rank`")
@@ -48,5 +49,9 @@ public class Memory {
     @TableLogic
     @JsonIgnore
     private Long del;
+
+    public String getWikiUrl() {
+        return "https://wiki.biligame.com/bjhl/记忆烙痕/"+name;
+    }
 
 }

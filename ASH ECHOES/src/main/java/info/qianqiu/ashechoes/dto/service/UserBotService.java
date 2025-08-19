@@ -1,12 +1,13 @@
 package info.qianqiu.ashechoes.dto.service;
 
+import cn.hutool.core.net.URLEncodeUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import info.qianqiu.ashechoes.controller.vo.bot.*;
-import info.qianqiu.ashechoes.dto.domain.UserAuth;
-import info.qianqiu.ashechoes.dto.domain.UserBot;
+import info.qianqiu.ashechoes.dto.domain.*;
+import info.qianqiu.ashechoes.dto.domain.Character;
 import info.qianqiu.ashechoes.dto.mapper.UserBotMapper;
 import info.qianqiu.ashechoes.init.InitComputeData;
 import info.qianqiu.ashechoes.utils.bot.BotScreen;
@@ -17,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,7 +50,6 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         if (d.groupChat()) {
             String api = "v2/groups/" + d.getGroup_openid() + "/messages";
             String mediaApi = "v2/groups/" + d.getGroup_openid() + "/files";
-
             String key = d.getGroup_openid() + d.getUserOpenId() + d.getId();
             try {
                 if (!init.reciveBotMsg(key)) {
@@ -72,6 +74,8 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                 commandPoolShow(d, api, mediaApi);
             } else if ((d.getContent().contains("全部抽取角色") || d.getContent().contains("全部抽取烙痕"))) {
                 commandAllShow(d, api, mediaApi);
+            } else if (d.getContent().contains("/档案")) {
+                commandWiki(d, api);
             }
 
         }
@@ -80,6 +84,61 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                 ""
         ));
 
+    }
+
+    private void commandWiki(BotCallbackData d, String api) {
+        BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
+        String searchName = d.getContent().replaceAll("/档案", "").trim();
+        if (searchName.isEmpty()) {
+            builder.content("\n亲爱的小监督~\n请正确使用指令~\n例：/档案 余音");
+            sendMsg(d, api, builder);
+            return;
+        }
+        ArrayList<BotMarkdownData> botMarkdownData = new ArrayList<>();
+        BotMarkdown.BotMarkdownBuilder botMarkdownBuilder =
+                BotMarkdown.builder().custom_template_id("102802681_1755584729").params(botMarkdownData);
+        String[] name = new String[1];
+        String[] image = new String[1];
+        String[] sname = new String[1];
+        String[] url = new String[1];
+        for (Character c : init.getAllSimpleCharavter()) {
+            if (Arrays.asList(c.getSName().split(",")).contains(searchName)) {
+                name[0] = c.getName();
+                image[0] = c.getAvatar();
+                sname[0] = c.getSName();
+                url[0] = URLEncodeUtil.encode(c.getWikiUrl());
+                break;
+            }
+        }
+        for (Memory c : init.getAllMemory()) {
+            if (Arrays.asList(c.getSName().split(",")).contains(searchName)) {
+                name[0] = c.getName();
+                image[0] = c.getImg();
+                sname[0] = c.getSName();
+                url[0] = URLEncodeUtil.encode(c.getWikiUrl());
+                break;
+            }
+        }
+        for (Skill c : init.getAllSkill().stream().filter(e -> e.getSkillId() <= 300000).toList()) {
+            if (Arrays.asList(c.getSName().split(",")).contains(searchName)) {
+                name[0] = c.getName();
+                image[0] = c.getIcons();
+                sname[0] = c.getSName();
+                url[0] = URLEncodeUtil.encode(c.getWikiUrl());
+                break;
+            }
+        }
+        if (name[0] == null) {
+            builder.content("\n亲爱的小监督~\n当前检索词未查询到对应档案\n请修改后尝试~");
+            sendMsg(d, api, builder);
+            return;
+        }
+        botMarkdownData.add(new BotMarkdownData("name", name));
+        botMarkdownData.add(new BotMarkdownData("image", image));
+        botMarkdownData.add(new BotMarkdownData("sname", sname));
+        botMarkdownData.add(new BotMarkdownData("url", url));
+
+        sendMarkdown(d, api, builder.markdown(botMarkdownBuilder.build()));
     }
 
     private void commandAllShow(BotCallbackData d, String msgApi, String mediaApi) {
@@ -201,6 +260,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         if (d.getContent().replaceAll("/绑定", "").trim().isEmpty()) {
             builder.content("\n亲爱的小监督~\n请先前往网页端获取授权码，然后绑定小助手账号哦~");
             sendMsg(d, api, builder);
+            return;
         }
         Long authCode = Long.parseLong(d.getContent().replaceAll("^\\D*(\\d+).*$", "$1"));
         List<UserAuth> list = authService.list(new LambdaQueryWrapper<UserAuth>()
@@ -261,6 +321,12 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
     private void sendMedia(BotCallbackData d, String api, BotSendMsg.BotSendMsgBuilder media) {
         media.msg_id(d.getId())
                 .msg_type(MsgTypeConstant.MEDIA);
+        ReqUtils.botPost(botConfig.getUrl() + api, JSONObject.toJSONString(media.build()));
+    }
+
+    private void sendMarkdown(BotCallbackData d, String api, BotSendMsg.BotSendMsgBuilder media) {
+        media.msg_id(d.getId()).content(" ")
+                .msg_type(MsgTypeConstant.MARKDOWN);
         ReqUtils.botPost(botConfig.getUrl() + api, JSONObject.toJSONString(media.build()));
     }
 
