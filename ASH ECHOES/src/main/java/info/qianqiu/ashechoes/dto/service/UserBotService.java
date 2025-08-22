@@ -56,9 +56,23 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            UserBot userBot = checkLogin(d, api, mediaApi);
-            if (userBot == null) {
-                return null;
+            UserBot userBot = null;
+
+            HashSet<String> ex = new HashSet<>();
+            ex.add("/绑定");
+            ex.add("/档案");
+            boolean skip = false;
+            for (String e : ex) {
+                if (d.getContent().contains(e)) {
+                    skip = true;
+                    break;
+                }
+            }
+            if (!skip) {
+                userBot = checkLogin(d, api, mediaApi);
+                if (userBot == null) {
+                    return null;
+                }
             }
             if (" ".equals(d.getContent()) || StringUtils.isEmpty(d.getContent().trim())) {
                 BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
@@ -279,28 +293,15 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                 .eq(UserBot::getMemberId, d.getUserOpenId())
                 .eq(UserBot::getGroupId, d.getGroup_openid()));
 
-        HashSet<String> ex = new HashSet<>();
-        ex.add("/绑定");
-        ex.add("/档案");
-
         if (list.isEmpty()) {
-            boolean skip = false;
-            for (String e : ex) {
-                if (d.getContent().contains(e)) {
-                    skip = true;
-                    break;
-                }
-            }
-            if (!skip) {
+
                 BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
                 builder.content("\n亲爱的小监督~\n请先使用/绑定指令，绑定小助手账号哦~");
                 BotMediaResponse botMediaResponse = genMediaInfo(mediaApi, "https://bjhl.qianqiu.info/bot/login-template.jpg");
                 builder.media(botMediaResponse);
                 sendMedia(d, api, builder);
                 return null;
-            }
         }
-
         return list.getLast();
     }
 
