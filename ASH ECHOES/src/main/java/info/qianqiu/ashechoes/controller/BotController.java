@@ -2,6 +2,7 @@ package info.qianqiu.ashechoes.controller;
 
 import info.qianqiu.ashechoes.controller.vo.bot.*;
 import info.qianqiu.ashechoes.dto.service.UserBotService;
+import info.qianqiu.ashechoes.utils.http.R;
 import info.qianqiu.ashechoes.utils.string.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,19 @@ public class BotController {
 
     private final BotConfig botSecret;
     private final UserBotService userBotService;
+
+    @GetMapping("/wiki/search/{id}")
+    public R searchKey(@PathVariable("id") Long key) {
+        String[] name = new String[1];
+        String[] image = new String[1];
+        String[] sname = new String[1];
+        String[] url = new String[1];
+        userBotService.searchDataById(key, name, image, sname, url);
+        if (name[0] == null) {
+            return R.fail("未检索到《" + key + "》的档案信息");
+        }
+        return R.ok(url[0]);
+    }
 
     @PostMapping("/receive")
     public ResponseEntity<BotCallbackResponse> handleCallback(

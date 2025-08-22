@@ -11,6 +11,7 @@ import info.qianqiu.ashechoes.dto.domain.Character;
 import info.qianqiu.ashechoes.dto.mapper.UserBotMapper;
 import info.qianqiu.ashechoes.init.InitComputeData;
 import info.qianqiu.ashechoes.utils.bot.BotScreen;
+import info.qianqiu.ashechoes.utils.http.R;
 import info.qianqiu.ashechoes.utils.http.ReqUtils;
 import info.qianqiu.ashechoes.utils.string.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
     private final BotConfig botConfig;
     private final UserAuthService authService;
     private final UserAuthService userAuthService;
+    private final UserBotSearchService userBotSearchService;
     private final BotScreen botScreen;
     private final InitComputeData init;
 
@@ -74,19 +76,19 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                     return null;
                 }
             }
-            if (" ".equals(d.getContent()) || StringUtils.isEmpty(d.getContent().trim())) {
-                BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
-                builder.content(
-                        "\n亲爱的小监督~\n欢迎使用白荆小助手~\n输入对应指令可直接获取该指令帮助信息~\n如有建议，欢迎加入白荆回廊综合交流群：865686593");
-                sendMsg(d, api, builder);
+            if (d.getContent().contains("/档案")) {
+                commandWiki(d, api);
+            } else if ((d.getContent().contains("全部抽取角色") || d.getContent().contains("全部抽取烙痕"))) {
+                commandAllShow(userBot, d, api, mediaApi);
             } else if (d.getContent().contains("绑定")) {
                 commandLogin(d, api);
             } else if ((d.getContent().contains("卡池"))) {
                 commandPoolShow(userBot, d, api, mediaApi);
-            } else if ((d.getContent().contains("全部抽取角色") || d.getContent().contains("全部抽取烙痕"))) {
-                commandAllShow(userBot, d, api, mediaApi);
-            } else if (d.getContent().contains("/档案")) {
-                commandWiki(d, api);
+            } else if (" ".equals(d.getContent()) || StringUtils.isEmpty(d.getContent().trim())) {
+                BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
+                builder.content(
+                        "\n亲爱的小监督~\n欢迎使用白荆小助手~\n输入对应指令可直接获取该指令帮助信息~\n如有建议，欢迎加入白荆回廊综合交流群：865686593");
+                sendMsg(d, api, builder);
             }
 
         }
@@ -112,44 +114,72 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         String[] image = new String[1];
         String[] sname = new String[1];
         String[] url = new String[1];
+        searchData(searchName, name, image, sname, url);
+        if (name[0] == null) {
+            builder.content("\n亲爱的小监督~\n当前检索词未查询到对应档案\n请修改后尝试~");
+            sendMsg(d, api, builder);
+            return;
+        }
+        UserBotSearch one = userBotSearchService.getOne(
+                new LambdaQueryWrapper<UserBotSearch>().eq(UserBotSearch::getKey, searchName));
+
+        if (one == null) {
+            one = new UserBotSearch(0L, searchName);
+            userBotSearchService.save(one);
+        }
+
+        //BOT markdown审核还没有放开，暂时使用URL方案
+        StringBuffer sb = new StringBuffer();
+        sb.append("\n" + name[0] + "\uD83D\uDDBC\uFE0F️");
+        sb.append("\n" + "检索名称\uD83D\uDD0D：" + sname[0]);
+        sb.append("\n" + "WIKI档案\uD83D\uDCD6：" + "https://bjhl.qianqiu.info/search?k=" + one.getSearchCacheId());
+        builder.content(sb.toString());
+        sendMsg(d, api, builder);
+//        botMarkdownData.add(new BotMarkdownData("name", name));
+//        botMarkdownData.add(new BotMarkdownData("image", image));
+//        botMarkdownData.add(new BotMarkdownData("sname", sname));
+//        botMarkdownData.add(new BotMarkdownData("url", url));
+//
+//        sendMarkdown(d, api, builder.markdown(botMarkdownBuilder.build()));
+    }
+
+    public void searchDataById(Long key, String[] name, String[] image, String[] sname, String[] url) {
+        UserBotSearch byId = userBotSearchService.getById(key);
+        searchData(byId.getKey(), name, image, sname, url);
+    }
+
+    private void searchData(String searchName, String[] name, String[] image, String[] sname, String[] url) {
         for (Character c : init.getAllSimpleCharavter()) {
             if (Arrays.asList(c.getSName().split(",")).contains(searchName)) {
-                name[0] = c.getName();
+                name[0] = "同调者：" + c.getName();
                 image[0] = c.getAvatar();
                 sname[0] = c.getSName();
                 url[0] = URLEncodeUtil.encode(c.getWikiUrl());
                 break;
             }
         }
-        for (Memory c : init.getAllMemory()) {
-            if (Arrays.asList(c.getSName().split(",")).contains(searchName)) {
-                name[0] = c.getName();
-                image[0] = c.getImg();
-                sname[0] = c.getSName();
-                url[0] = URLEncodeUtil.encode(c.getWikiUrl());
-                break;
-            }
-        }
-        for (Skill c : init.getAllSkill().stream().filter(e -> e.getSkillId() <= 300000).toList()) {
-            if (Arrays.asList(c.getSName().split(",")).contains(searchName)) {
-                name[0] = c.getName();
-                image[0] = c.getIcons();
-                sname[0] = c.getSName();
-                url[0] = URLEncodeUtil.encode(c.getWikiUrl());
-                break;
+        if (name[0] == null) {
+            for (Memory c : init.getAllMemory()) {
+                if (Arrays.asList(c.getSName().split(",")).contains(searchName)) {
+                    name[0] = "烙痕：" + c.getName();
+                    image[0] = c.getImg();
+                    sname[0] = c.getSName();
+                    url[0] = URLEncodeUtil.encode(c.getWikiUrl());
+                    break;
+                }
             }
         }
         if (name[0] == null) {
-            builder.content("\n亲爱的小监督~\n当前检索词未查询到对应档案\n请修改后尝试~");
-            sendMsg(d, api, builder);
-            return;
+            for (Skill c : init.getAllSkill().stream().filter(e -> e.getSkillId() <= 300000).toList()) {
+                if (Arrays.asList(c.getSName().split(",")).contains(searchName)) {
+                    name[0] = "技能：" + c.getName();
+                    image[0] = c.getIcons();
+                    sname[0] = c.getSName();
+                    url[0] = URLEncodeUtil.encode(c.getWikiUrl());
+                    break;
+                }
+            }
         }
-        botMarkdownData.add(new BotMarkdownData("name", name));
-        botMarkdownData.add(new BotMarkdownData("image", image));
-        botMarkdownData.add(new BotMarkdownData("sname", sname));
-        botMarkdownData.add(new BotMarkdownData("url", url));
-
-        sendMarkdown(d, api, builder.markdown(botMarkdownBuilder.build()));
     }
 
     private void commandAllShow(UserBot one, BotCallbackData d, String msgApi, String mediaApi) {
@@ -288,19 +318,20 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         sendMsg(d, api, builder);
     }
 
-    private UserBot checkLogin(BotCallbackData d, String api,String mediaApi) {
+    private UserBot checkLogin(BotCallbackData d, String api, String mediaApi) {
         List<UserBot> list = list(new LambdaQueryWrapper<UserBot>()
                 .eq(UserBot::getMemberId, d.getUserOpenId())
                 .eq(UserBot::getGroupId, d.getGroup_openid()));
 
         if (list.isEmpty()) {
 
-                BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
-                builder.content("\n亲爱的小监督~\n请先使用/绑定指令，绑定小助手账号哦~");
-                BotMediaResponse botMediaResponse = genMediaInfo(mediaApi, "https://bjhl.qianqiu.info/bot/login-template.jpg");
-                builder.media(botMediaResponse);
-                sendMedia(d, api, builder);
-                return null;
+            BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
+            builder.content("\n亲爱的小监督~\n请先使用/绑定指令，绑定小助手账号哦~");
+            BotMediaResponse botMediaResponse =
+                    genMediaInfo(mediaApi, "https://bjhl.qianqiu.info/bot/login-template.jpg");
+            builder.media(botMediaResponse);
+            sendMedia(d, api, builder);
+            return null;
         }
         return list.getLast();
     }
@@ -332,5 +363,4 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         return JSONObject.parseObject(result, BotMediaResponse.class);
 
     }
-
 }
