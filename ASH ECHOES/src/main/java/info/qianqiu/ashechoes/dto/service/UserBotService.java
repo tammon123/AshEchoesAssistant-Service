@@ -61,8 +61,8 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
             UserBot userBot = null;
 
             HashSet<String> ex = new HashSet<>();
-            ex.add("/绑定");
-            ex.add("/档案");
+            ex.add("绑定");
+            ex.add("档案");
             boolean skip = false;
             for (String e : ex) {
                 if (d.getContent().contains(e)) {
