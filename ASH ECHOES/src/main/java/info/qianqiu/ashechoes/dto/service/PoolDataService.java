@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
 
-    private final static int INSERT_COUNT = 500;
+    private final static int INSERT_COUNT = 300;
     private final UserService userService;
     private final PoolDataMapper poolDataMapper;
     private final PoolDataRankMapper poolDataRankMapper;

@@ -27,7 +27,7 @@ public class ResttemplateLogClientInterceptor implements ClientHttpRequestInterc
     }
 
     private void tranceRequest(HttpRequest request, byte[] body) throws UnsupportedEncodingException {
-        log.info("{};bd:{},hd:{}", request.getURI(),
+        log.debug("{};bd:{},hd:{}", request.getURI(),
                 new String(body, StandardCharsets.UTF_8), request.getHeaders());
     }
 
@@ -40,6 +40,6 @@ public class ResttemplateLogClientInterceptor implements ClientHttpRequestInterc
             inputStringBuilder.append(line);
             line = bufferedReader.readLine();
         }
-        log.info("bd:{};sc:{};hd:{};", inputStringBuilder, httpResponse.getStatusCode(), httpResponse.getHeaders());
+        log.debug("bd:{};sc:{};hd:{};", inputStringBuilder, httpResponse.getStatusCode(), httpResponse.getHeaders());
     }
 }
