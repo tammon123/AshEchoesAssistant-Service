@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
 
-    private final static int INSERT_COUNT = 1000;
+    private final static int INSERT_COUNT = 500;
     private final UserService userService;
     private final PoolDataMapper poolDataMapper;
     private final PoolDataRankMapper poolDataRankMapper;
@@ -1089,34 +1089,29 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 starttime = endtime;
                 endtime += 86400 * 30;
             }
-            VThread.submit(() -> {
-                try {
-                    log.info("用户{}总预插入数据:{}条", uid, poolData.size());
-                    int count = 0;
-                    ArrayList<PoolData> temp = new ArrayList<>();
-                    for (PoolData o : poolData) {
-                        temp.add(o);
-                        // 每收集300条记录就进行一次批量保存
-                        if (temp.size() >= INSERT_COUNT) {
-                            count += INSERT_COUNT;
-                            log.info("用户{}插入:{}条", uid, count);
-                            poolDataMapper.insert(temp); // 批量保存
-                            temp.clear(); // 清空列表以准备下一批
-                        }
-                    }
-                    // 处理剩余的数据（如果不足100条）
-                    if (!temp.isEmpty()) {
-                        log.info("用户{}总插入数据结束:{}条", uid, count + temp.size());
+            try {
+                log.info("用户{}总预插入数据:{}条", uid, poolData.size());
+                int count = 0;
+                ArrayList<PoolData> temp = new ArrayList<>();
+                for (PoolData o : poolData) {
+                    temp.add(o);
+                    // 每收集300条记录就进行一次批量保存
+                    if (temp.size() >= INSERT_COUNT) {
+                        count += INSERT_COUNT;
+                        log.info("用户{}插入:{}条", uid, count);
                         poolDataMapper.insert(temp); // 批量保存
+                        temp.clear(); // 清空列表以准备下一批
                     }
-                } catch (Exception e) {
-
-                } finally {
-                    userStatusMap.remove(uid);
                 }
-            });
+                // 处理剩余的数据（如果不足100条）
+                if (!temp.isEmpty()) {
+                    log.info("用户{}总插入数据结束:{}条", uid, count + temp.size());
+                    poolDataMapper.insert(temp); // 批量保存
+                }
+            }finally {
+                userStatusMap.remove(uid);
+            }
             userService.update(new LambdaUpdateWrapper<User>().set(User::getToken, token).eq(User::getUid, uid));
-            return R.ok();
         } catch (Exception e) {
             log.info("{}", e.getMessage());
             e.printStackTrace();
@@ -1124,7 +1119,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         } finally {
             userStatusMap.remove(uid);
         }
-
+        return R.ok();
     }
 
     /**
