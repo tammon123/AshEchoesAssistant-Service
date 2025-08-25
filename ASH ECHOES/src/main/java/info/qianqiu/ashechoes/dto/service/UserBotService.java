@@ -14,6 +14,8 @@ import info.qianqiu.ashechoes.utils.bot.BotScreen;
 import info.qianqiu.ashechoes.utils.http.R;
 import info.qianqiu.ashechoes.utils.http.ReqUtils;
 import info.qianqiu.ashechoes.utils.string.StringUtils;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +42,27 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
     private final UserBotSearchService userBotSearchService;
     private final BotScreen botScreen;
     private final InitComputeData init;
+    private static final String LOGIN_TEMPLATE_JPG = "https://r.qianqiu.info/bot/login-template.jpg";
+
+    private static final HashSet<String> BOT_COMMAND = new HashSet<>();
+
+    static {
+        BOT_COMMAND.add("绑定");
+        BOT_COMMAND.add("档案");
+        BOT_COMMAND.add("卡池");
+        BOT_COMMAND.add("全部抽取角色");
+        BOT_COMMAND.add("全部抽取烙痕");
+    }
+
+    private boolean receiveHasBotCommand(String content) {
+        boolean has = false;
+        for (String key : BOT_COMMAND) {
+            if (content.contains(key)) {
+                return true;
+            }
+        }
+        return has;
+    }
 
     public ResponseEntity<BotCallbackResponse> groupChat(BotCallbackRequest request) {
 
@@ -76,19 +99,22 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                     return null;
                 }
             }
-            if (d.getContent().contains("/档案")) {
+            if (d.getContent().contains("档案") || (!receiveHasBotCommand(d.getContent()) && !d.getContent().trim().isEmpty())) {
                 commandWiki(d, api);
             } else if ((d.getContent().contains("全部抽取角色") || d.getContent().contains("全部抽取烙痕"))) {
                 commandAllShow(userBot, d, api, mediaApi);
             } else if (d.getContent().contains("绑定")) {
-                commandLogin(d, api);
+                commandLogin(d, api, mediaApi);
             } else if ((d.getContent().contains("卡池"))) {
                 commandPoolShow(userBot, d, api, mediaApi);
             } else if (" ".equals(d.getContent()) || StringUtils.isEmpty(d.getContent().trim())) {
                 BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
                 builder.content(
-                        "\n亲爱的小监督~\n欢迎使用白荆小助手~\n输入对应指令可直接获取该指令帮助信息~\n如有建议，欢迎加入白荆回廊综合交流群：865686593");
-                sendMsg(d, api, builder);
+                        "\n亲爱的小监督~\n欢迎使用白荆小助手~\n如需使用抽卡分析功能，请先绑定小助手网页端账号~\n如有建议，欢迎加入白荆回廊综合交流群：865686593");
+                BotMediaResponse botMediaResponse =
+                        genMediaInfo(mediaApi, LOGIN_TEMPLATE_JPG);
+                builder.media(botMediaResponse);
+                sendMedia(d, api, builder);
             }
 
         }
@@ -101,7 +127,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
 
     private void commandWiki(BotCallbackData d, String api) {
         BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
-        String searchName = d.getContent().replaceAll("/档案", "").trim();
+        String searchName = d.getContent().replaceAll("档案", "").replaceAll("/", "").trim();
         if (searchName.isEmpty()) {
             builder.content("\n亲爱的小监督~\n请正确使用指令~\n例：/档案 余音");
             sendMsg(d, api, builder);
@@ -228,7 +254,8 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                 "\n /卡池 5（识海甄录）";
 
         BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
-        if (d.getContent().contains("卡池") && d.getContent().replaceAll("/卡池", "").trim().isEmpty()) {
+        if (d.getContent().contains("卡池") &&
+                d.getContent().replaceAll("卡池", "").replaceAll("/", "").trim().isEmpty()) {
             builder.content(poolListMsg);
             sendMsg(d, msgApi, builder);
             return;
@@ -241,9 +268,6 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         }
 
         String baseUrl = "https://bjhl.qianqiu.info";
-        if (System.getenv("LOCAL_MACHINE") != null) {
-            baseUrl = "https://bjhl.qianqiu.info";
-        }
         String path = "/pages/chouka/chouka";
         String uid = one.getUserId().toString();
         String behavior = "";
@@ -276,11 +300,14 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
 
     }
 
-    private void commandLogin(BotCallbackData d, String api) {
+    private void commandLogin(BotCallbackData d, String api, String mediaApi) {
         BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
-        if (d.getContent().replaceAll("/绑定", "").trim().isEmpty()) {
+        if (d.getContent().replaceAll("绑定", "").replaceAll("/", "").trim().isEmpty()) {
             builder.content("\n亲爱的小监督~\n请先前往网页端获取授权码，然后绑定小助手账号哦~");
-            sendMsg(d, api, builder);
+            BotMediaResponse botMediaResponse =
+                    genMediaInfo(mediaApi, LOGIN_TEMPLATE_JPG);
+            builder.media(botMediaResponse);
+            sendMedia(d, api, builder);
             return;
         }
         Long authCode = Long.parseLong(d.getContent().replaceAll("^\\D*(\\d+).*$", "$1"));
@@ -289,6 +316,10 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                 .eq(UserAuth::getUsed, 0));
         if (list.isEmpty()) {
             builder.content("\n亲爱的小监督~\n该授权码错误或已被使用~\n请前往小助手APP/网页端重新生成授权码~");
+            BotMediaResponse botMediaResponse =
+                    genMediaInfo(mediaApi, LOGIN_TEMPLATE_JPG);
+            builder.media(botMediaResponse);
+            sendMedia(d, api, builder);
         } else {
             UserAuth first = list.getFirst();
             long count = count(new LambdaQueryWrapper<UserBot>()
@@ -301,6 +332,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                         .eq(UserBot::getMemberId, d.getUserOpenId())
                 );
                 builder.content("\n亲爱的小监督~\n您已成功更新小助手账号，欢迎使用~");
+                sendMsg(d, api, builder);
             } else {
                 UserBot build =
                         UserBot.builder().groupId(d.getGroup_openid()).memberId(d.getUserOpenId())
@@ -309,13 +341,13 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                 save(build);
 
                 builder.content("\n亲爱的小监督~\n您已成功绑定小助手账号，欢迎使用~");
+                sendMsg(d, api, builder);
             }
             if (74185296336L != authCode) {
                 userAuthService.update(new LambdaUpdateWrapper<UserAuth>().set(UserAuth::getUsed, 1)
                         .eq(UserAuth::getAuthCode, authCode));
             }
         }
-        sendMsg(d, api, builder);
     }
 
     private UserBot checkLogin(BotCallbackData d, String api, String mediaApi) {
@@ -328,7 +360,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
             BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
             builder.content("\n亲爱的小监督~\n请先使用/绑定指令，绑定小助手账号哦~");
             BotMediaResponse botMediaResponse =
-                    genMediaInfo(mediaApi, "https://bjhl.qianqiu.info/bot/login-template.jpg");
+                    genMediaInfo(mediaApi, LOGIN_TEMPLATE_JPG);
             builder.media(botMediaResponse);
             sendMedia(d, api, builder);
             return null;
