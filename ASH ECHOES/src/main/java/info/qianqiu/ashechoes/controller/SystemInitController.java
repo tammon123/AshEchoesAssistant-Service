@@ -42,7 +42,7 @@ public class SystemInitController {
     @GetMapping("/h5/v")
     public R version() {
         try {
-            String get = ReqUtils.get("https://bjhl.qianqiu.info/version.json");
+            String get = ReqUtils.get("http://bjhl.qianqiu.info/version.json");
             String app = JSONObject.parseObject(get).getString("app");
             return R.ok(app);
         } catch (Exception e) {
@@ -60,7 +60,7 @@ public class SystemInitController {
         JSONObject r = new JSONObject();
         r.put("code", 0);
         try {
-            String get = ReqUtils.get("https://bjhl.qianqiu.info/version.json");
+            String get = ReqUtils.get("http://bjhl.qianqiu.info/version.json");
             String app = JSONObject.parseObject(get).getString("c");
             r.put("data", app);
             r.put("app", JSONObject.parseObject(get).getString("app"));
@@ -79,7 +79,7 @@ public class SystemInitController {
     @GetMapping("/h5/info")
     public R h5Info() {
         try {
-            String get = ReqUtils.get("https://bjhl.qianqiu.info/h5.txt");
+            String get = ReqUtils.get("http://bjhl.qianqiu.info/h5.txt");
             String app = JSONObject.parseObject(get).getString("data");
             return R.ok(app);
         } catch (Exception e) {
@@ -93,7 +93,7 @@ public class SystemInitController {
     @GetMapping("/friend/list")
     public R friendList() {
         try {
-            String get = ReqUtils.get("https://bjhl.qianqiu.info/friendUrl.json");
+            String get = ReqUtils.get("http://bjhl.qianqiu.info/friendUrl.json");
             return R.ok(JSONObject.parseObject(get).getJSONArray("data"));
         } catch (Exception e) {
         }
@@ -105,7 +105,7 @@ public class SystemInitController {
      */
     @GetMapping("/update/log")
     public R updateLog() {
-        String get = ReqUtils.get("https://bjhl.qianqiu.info/update.json");
+        String get = ReqUtils.get("http://bjhl.qianqiu.info/update.json");
         return R.ok(get);
     }
 

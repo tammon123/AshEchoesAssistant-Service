@@ -44,7 +44,7 @@ public class SuggestController {
     @PostMapping("/suggest/page")
     public R suggestPage(@RequestBody Suggest suggest) {
         if ("mini".equals(suggest.getDesc())) {
-            String url = "https://bjhl.qianqiu.info/v.txt";
+            String url = "http://bjhl.qianqiu.info/v.txt";
             JSONObject jo = JSONObject.parseObject(ReqUtils.get(url));
             if ("暂无更新日志".equals(jo.getString("data"))) {
                 return R.ok();

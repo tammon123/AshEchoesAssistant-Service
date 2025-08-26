@@ -11,11 +11,8 @@ import info.qianqiu.ashechoes.dto.domain.Character;
 import info.qianqiu.ashechoes.dto.mapper.UserBotMapper;
 import info.qianqiu.ashechoes.init.InitComputeData;
 import info.qianqiu.ashechoes.utils.bot.BotScreen;
-import info.qianqiu.ashechoes.utils.http.R;
 import info.qianqiu.ashechoes.utils.http.ReqUtils;
 import info.qianqiu.ashechoes.utils.string.StringUtils;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +40,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
     private final BotScreen botScreen;
     private final InitComputeData init;
     private static final String LOGIN_TEMPLATE_JPG = "https://r.qianqiu.info/bot/login-template.jpg";
+    private static final String SEARCH_URL = "https://s.qianqiu.info/s?k=";
 
     private static final HashSet<String> BOT_COMMAND = new HashSet<>();
 
@@ -110,7 +108,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
             } else if (" ".equals(d.getContent()) || StringUtils.isEmpty(d.getContent().trim())) {
                 BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
                 builder.content(
-                        "\n亲爱的小监督~\n欢迎使用白荆小助手~\n如需使用抽卡分析功能，请先绑定小助手网页端账号~\n如有建议，欢迎加入白荆回廊综合交流群：865686593");
+                        "\n亲爱的小监督~\n欢迎使用白荆小助手~\n如需使用抽卡分析功能，请先绑定小助手网页端账号~\n绑定页面：https://s.qianqiu.info/pages/index/index\n如有建议，欢迎加入白荆回廊综合交流群：865686593");
                 BotMediaResponse botMediaResponse =
                         genMediaInfo(mediaApi, LOGIN_TEMPLATE_JPG);
                 builder.media(botMediaResponse);
@@ -133,9 +131,6 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
             sendMsg(d, api, builder);
             return;
         }
-        ArrayList<BotMarkdownData> botMarkdownData = new ArrayList<>();
-        BotMarkdown.BotMarkdownBuilder botMarkdownBuilder =
-                BotMarkdown.builder().custom_template_id("102802681_1755584729").params(botMarkdownData);
         String[] name = new String[1];
         String[] image = new String[1];
         String[] sname = new String[1];
@@ -158,15 +153,9 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         StringBuffer sb = new StringBuffer();
         sb.append("\n" + name[0] + "\uD83D\uDDBC\uFE0F️");
         sb.append("\n" + "检索名称\uD83D\uDD0D：" + sname[0]);
-        sb.append("\n" + "WIKI档案\uD83D\uDCD6：" + "https://bjhl.qianqiu.info/search?k=" + one.getSearchCacheId());
+        sb.append("\n" + "WIKI档案\uD83D\uDCD6：" + SEARCH_URL + one.getSearchCacheId());
         builder.content(sb.toString());
         sendMsg(d, api, builder);
-//        botMarkdownData.add(new BotMarkdownData("name", name));
-//        botMarkdownData.add(new BotMarkdownData("image", image));
-//        botMarkdownData.add(new BotMarkdownData("sname", sname));
-//        botMarkdownData.add(new BotMarkdownData("url", url));
-//
-//        sendMarkdown(d, api, builder.markdown(botMarkdownBuilder.build()));
     }
 
     public void searchDataById(Long key, String[] name, String[] image, String[] sname, String[] url) {
@@ -174,7 +163,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
         searchData(byId.getKey(), name, image, sname, url);
     }
 
-    private void searchData(String searchName, String[] name, String[] image, String[] sname, String[] url) {
+    public void searchData(String searchName, String[] name, String[] image, String[] sname, String[] url) {
         for (Character c : init.getAllSimpleCharavter()) {
             if (Arrays.asList(c.getSName().split(",")).contains(searchName)) {
                 name[0] = "同调者：" + c.getName();
@@ -210,7 +199,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
 
     private void commandAllShow(UserBot one, BotCallbackData d, String msgApi, String mediaApi) {
 
-        String baseUrl = "https://bjhl.qianqiu.info";
+        String baseUrl = "http://bjhl.qianqiu.info";
         String path = "/pages/chouka/chouka";
         String uid = one.getUserId().toString();
         String behavior = "";
@@ -267,7 +256,7 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
             return;
         }
 
-        String baseUrl = "https://bjhl.qianqiu.info";
+        String baseUrl = "http://bjhl.qianqiu.info";
         String path = "/pages/chouka/chouka";
         String uid = one.getUserId().toString();
         String behavior = "";
@@ -356,7 +345,6 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
                 .eq(UserBot::getGroupId, d.getGroup_openid()));
 
         if (list.isEmpty()) {
-
             BotSendMsg.BotSendMsgBuilder builder = BotSendMsg.builder();
             builder.content("\n亲爱的小监督~\n请先使用/绑定指令，绑定小助手账号哦~");
             BotMediaResponse botMediaResponse =
@@ -377,12 +365,6 @@ public class UserBotService extends ServiceImpl<UserBotMapper, UserBot> {
     private void sendMedia(BotCallbackData d, String api, BotSendMsg.BotSendMsgBuilder media) {
         media.msg_id(d.getId())
                 .msg_type(MsgTypeConstant.MEDIA);
-        ReqUtils.botPost(botConfig.getUrl() + api, JSONObject.toJSONString(media.build()));
-    }
-
-    private void sendMarkdown(BotCallbackData d, String api, BotSendMsg.BotSendMsgBuilder media) {
-        media.msg_id(d.getId()).content(" ")
-                .msg_type(MsgTypeConstant.MARKDOWN);
         ReqUtils.botPost(botConfig.getUrl() + api, JSONObject.toJSONString(media.build()));
     }
 

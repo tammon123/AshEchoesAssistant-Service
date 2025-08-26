@@ -1364,7 +1364,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
     }
 
     public ArrayList<JSONObject> getFormatAllPoolData() {
-        String json = ReqUtils.get("https://bjhl.qianqiu.info/pool.json");
+        String json = ReqUtils.get("http://bjhl.qianqiu.info/pool.json");
         JSONObject fullData = JSONObject.parseObject(json);
 
         // 存储最终结果

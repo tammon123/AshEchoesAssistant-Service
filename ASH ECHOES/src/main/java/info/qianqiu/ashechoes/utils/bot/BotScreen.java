@@ -44,7 +44,7 @@ public class BotScreen {
             fos.write(imageData);
             fos.flush();
 
-            return CompletableFuture.completedFuture("https://bjhl.qianqiu.info/bot/chouka/" + fileName);
+            return CompletableFuture.completedFuture("http://bjhl.qianqiu.info/bot/chouka/" + fileName);
 
         } catch (IOException e) {
             String errorMsg = "请联系开发者(865686593)：保存截图失败：" + e.getMessage();

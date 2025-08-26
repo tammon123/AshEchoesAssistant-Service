@@ -59,7 +59,7 @@ public class RestTemplateConfig {
      * @return
      */
     public static RestTemplate createRestTemplate(int connectionTimeoutMs, int readTimeoutMs,
-                                                  ObjectMapper objectMapper) {
+                                                  ObjectMapper objectMapper,boolean reqLog, boolean resLog) {
 
         HttpClientBuilder clientBuilder = HttpClients.custom();
 
@@ -114,7 +114,7 @@ public class RestTemplateConfig {
         // 添加自定义拦截器
         List<ClientHttpRequestInterceptor> interceptors =
                 new ArrayList<ClientHttpRequestInterceptor>();
-        interceptors.add(new ResttemplateLogClientInterceptor());
+        interceptors.add(new ResttemplateLogClientInterceptor(reqLog, resLog));
         restTemplate.setInterceptors(interceptors);
         //提供对传出/传入流的缓冲,可以让响应body多次读取(如果不配置,拦截器读取了Response流,再响应数据时会返回body=null)
         restTemplate.setRequestFactory(new BufferingClientHttpRequestFactory(httpRequestFactory));
@@ -158,11 +158,16 @@ public class RestTemplateConfig {
 
     @Bean("restTemplate")
     public RestTemplate commonReq() {
-        return restTemplate(30000, 30000);
+        return restTemplate(30000, 30000,true,true);
     }
 
-    private RestTemplate restTemplate(int conTimeout, int readTimeout) {
-        RestTemplate restTemplate = RestTemplateConfig.createRestTemplate(conTimeout, readTimeout, new ObjectMapper());
+    @Bean("restTemplateNoReqLog")
+    public RestTemplate commonReqNoReqLog() {
+        return restTemplate(30000, 30000,false,true);
+    }
+
+    private RestTemplate restTemplate(int conTimeout, int readTimeout, boolean reqLog, boolean resLog) {
+        RestTemplate restTemplate = RestTemplateConfig.createRestTemplate(conTimeout, readTimeout, new ObjectMapper(), reqLog, resLog);
         //配置自定义的interceptor拦截器
         //使用restTemplate远程调用防止400和401导致报错而获取不到正确反馈信息
         restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
