@@ -940,7 +940,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         List<PoolData> list = getFormatPoolData(poolDataLambdaQueryWrapper);
 
         if (list.isEmpty()) {
-            return R.fail("没有找到数据，数据可能未加载完成，请等待加载完成后在来~");
+            return R.fail("本卡池未查询到数据，数据可能未加载完成或未导入~");
         }
         LinkedHashMap<String, List<PoolDataVo>> pools = new LinkedHashMap<>();
         for (PoolData pool : list) {
@@ -965,7 +965,9 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 j.setId(pd.getId());
                 // 同调者
                 if (isCharPool) {
-                    if (init.localUpChar.getString(pd.getPool()).contains(pd.getName())) {
+                    if (isCz) {
+                        tempBaodiFlag = 1L;
+                    }else if (init.localUpChar.getString(pd.getPool()).contains(pd.getName())) {
                         // 抽到了，但是需要看看前一个是不是0,这个还是大保底
                         if (!rData.isEmpty() && rData.getLast() == 0L) {
                             tempBaodiFlag = -1L;
@@ -973,12 +975,12 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                             tempBaodiFlag = 1L;
                         }
                     }
-                    if (isCz) {
-                        tempBaodiFlag = 1L;
-                    }
+
                     j.setAvatar(init.getCharacterAvatar(pd.getName()));
                 } else {
-                    if (pd.getPool().equals(pd.getName())) {
+                    if (isCz) {
+                        tempBaodiFlag = 1L;
+                    }else if (pd.getPool().equals(pd.getName())) {
                         // 抽到了，但是需要看看前一个是不是0,这个还是大保底
                         if (!rData.isEmpty() && rData.getLast() == 0L) {
                             tempBaodiFlag = -1L;
@@ -986,9 +988,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                             tempBaodiFlag = 1L;
                         }
                     }
-                    if (isCz) {
-                        tempBaodiFlag = 1L;
-                    }
+
                     j.setAvatar(init.getMemoryAvatar(pd.getName()));
                 }
                 rData.add(tempBaodiFlag);
