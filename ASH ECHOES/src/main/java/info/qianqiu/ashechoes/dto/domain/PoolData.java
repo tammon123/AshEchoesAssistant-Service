@@ -17,6 +17,8 @@ import java.util.Date;
 @TableName("`pool_data`")
 public class PoolData {
 
+
+
     @TableId
     private Long id;
     private String uid;
@@ -32,5 +34,7 @@ public class PoolData {
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @TableField("`time`")
     private Date time;
+
+
 
 }

@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 这里主要是抽卡数据交互
@@ -36,28 +37,8 @@ public class PoolDataController {
      */
     @GetMapping("/pool/all")
     public R getAllPool() {
-        String json = ReqUtils.get("https://bjhl.qianqiu.info/pool.json");
-        JSONObject rr = JSONObject.parseObject(json);
-        ArrayList<JSONObject> r = new ArrayList<>();
-        for (String s : rr.keySet()) {
-            JSONObject jsonObject = rr.getJSONObject(s);
-            if (jsonObject.getString("time") != null) {
-                if (jsonObject.getString("name").equals("岁暮重明")) {
-                    continue;
-                }
-                if (jsonObject.getString("name").equals("玉照长夜，陈酒新酌")) {
-                    continue;
-                }
-                r.add(jsonObject);
-            }
-        }
-        // 屠苏池子 红玉池子 特殊处理
-        JSONObject ts = new JSONObject();
-        ts.put("name", "玉照长夜，陈酒新酌 岁暮重明");
-        ts.put("type", "1");
-        ts.put("time", "2024.02.01 10:00 ~ 2024.02.22 03:50");
-        r.add(2, ts);
-        return R.ok(r);
+
+        return R.ok(poolDataService.getFormatAllPoolData());
     }
 
     /**

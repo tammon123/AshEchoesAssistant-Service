@@ -16,7 +16,9 @@ import info.qianqiu.ashechoes.dto.domain.User;
 import info.qianqiu.ashechoes.dto.mapper.PoolDataMapper;
 import info.qianqiu.ashechoes.dto.mapper.UserMapper;
 import info.qianqiu.ashechoes.utils.LinkedHashMapReverser;
+import info.qianqiu.ashechoes.utils.PoolDataTimeRange;
 import info.qianqiu.ashechoes.utils.http.R;
+import info.qianqiu.ashechoes.utils.http.ReqUtils;
 import info.qianqiu.ashechoes.utils.id.Id;
 import info.qianqiu.ashechoes.utils.string.StringUtils;
 import info.qianqiu.ashechoes.utils.thread.VThread;
@@ -235,6 +237,13 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         return R.fail("没有数据，请下载APP或在网页右上角导入数据");
     }
 
+    /**
+     * 同步当期的up池数据
+     *
+     * @param uid
+     * @param allPoolDataList
+     * @param groupCountData
+     */
     private void initLocalPoolUserInfo(String uid, List<PoolData> allPoolDataList,
                                        ArrayList<PoolDataUserinfoVo> groupCountData) {
         JSONObject r = new JSONObject();
@@ -716,6 +725,45 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         return R.ok(data.reversed());
     }
 
+    /**
+     * 获取同期卡池合并之后的数据
+     * @param poolDataLambdaQueryWrapper
+     * @return
+     */
+    public List<PoolData> getFormatPoolData(LambdaQueryWrapper<PoolData> poolDataLambdaQueryWrapper) {
+        List<PoolData> list = list(poolDataLambdaQueryWrapper);
+        // 将list转换为在线pool可以接受的样子
+        Map<String, List<PoolData>> collect = list.stream().collect(Collectors.groupingBy(PoolData::getPool));
+        HashMap<String, JSONObject> formatAllPoolDataNameMap = getFormatAllPoolDataNameMap();
+        Set<String> formatAllPoolDataNameKeySet = formatAllPoolDataNameMap.keySet();
+        for (String pool : collect.keySet()) {
+            // 如果格式化后的卡池列表不包含原始数据的卡池，那么这个卡池就需要处理
+            if (!formatAllPoolDataNameKeySet.contains(pool)) {
+                for (String name : formatAllPoolDataNameKeySet) {
+                    JSONObject jo = formatAllPoolDataNameMap.get(name);
+                    PoolDataTimeRange time = new PoolDataTimeRange(jo.getString("time"));
+                    if (name.contains(pool)) {
+                        for (PoolData pd : collect.get(pool)) {
+                            int cmpStart = pd.getTime().compareTo(time.getStartTime());
+                            int cmpEnd = pd.getTime().compareTo(time.getEndTime());
+
+                            if (cmpStart >= 0 && cmpEnd <= 0) {
+                                pd.setPool(name);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return list;
+    }
+
+    /**
+     * 以卡池视角展开的视图
+     * @param uid
+     * @param type
+     * @return
+     */
     public R getGroupPoolData(String uid, String type) {
         // 屠苏 红玉池子要特殊处理  岁暮重明 玉照长夜，陈酒新酌
         LambdaQueryWrapper<PoolData> poolDataLambdaQueryWrapper = new LambdaQueryWrapper<PoolData>()
@@ -730,30 +778,14 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         } else {
             poolDataLambdaQueryWrapper.eq(PoolData::getType, 1);
         }
-        List<PoolData> list = list(poolDataLambdaQueryWrapper);
+        List<PoolData> list = getFormatPoolData(poolDataLambdaQueryWrapper);
 
         if (list.isEmpty()) {
             return R.fail("没有找到数据，数据可能未加载完成，请等待完成后在来~");
         }
+
         LinkedHashMap<String, List<PoolData>> groupPoolList = list.stream()
                 .collect(Collectors.groupingBy(PoolData::getPool, LinkedHashMap::new, Collectors.toList()));
-        List<PoolData> sp1 = groupPoolList.get("玉照长夜，陈酒新酌");
-        List<PoolData> sp2 = groupPoolList.get("岁暮重明");
-        List<PoolData> sp3 = groupPoolList.get("游光澄明");
-        List<PoolData> spa = new ArrayList<>();
-        if (sp1 != null) {
-            spa.addAll(sp1);
-        }
-        if (sp2 != null) {
-            spa.addAll(sp2);
-        }
-        spa.sort(Comparator.comparing(PoolData::getTime)
-                .thenComparing(PoolData::getId).reversed());
-        groupPoolList.remove("玉照长夜，陈酒新酌");
-        groupPoolList.remove("岁暮重明");
-        groupPoolList.remove("游光澄明");
-        groupPoolList.put("玉照长夜，陈酒新酌 岁暮重明", spa);
-        groupPoolList.put("游光澄明", sp3);
 
         LinkedHashMap<String, List<PoolData>> oolist =
                 LinkedHashMapReverser.reverseLinkedHashMap(groupPoolList);
@@ -791,26 +823,15 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 j.setCount(count);
                 j.setTime(pd.getTime());
                 j.setPpol(pd.getPool());
-                if ("玉照长夜，陈酒新酌 岁暮重明".contains(pd.getPool())) {
-                    j.setPpol("玉照长夜，陈酒新酌 岁暮重明");
-                }
                 j.setId(pd.getId());
                 // 同调者
                 if ("0".equals(type)) {
-                    if (pd.getName().equalsIgnoreCase(init.localUpChar.getString(pd.getPool()))) {
+                    if (init.localUpChar.getString(pd.getPool()).contains(pd.getName())) {
                         // 抽到了，但是需要看看前一个是不是0,这个还是大保底
                         if (!rData.isEmpty() && rData.getLast() == 0L) {
                             tempBaodiFlag = -1L;
                         } else {
                             tempBaodiFlag = 1L;
-                        }
-                    } else if ("玉照长夜，陈酒新酌 岁暮重明".contains(pd.getPool())) {
-                        if ("百里屠苏、红玉".contains(pd.getName())) {
-                            if (!rData.isEmpty() && rData.getLast() == 0L) {
-                                tempBaodiFlag = -1L;
-                            } else {
-                                tempBaodiFlag = 1L;
-                            }
                         }
                     }
                     j.setAvatar(init.getCharacterAvatar(pd.getName()));
@@ -874,6 +895,12 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         return jo;
     }
 
+    /**
+     * 不分组查看数据
+     * @param uid
+     * @param type
+     * @return
+     */
     public R getTotalPoolData(String uid, String type) {
         JSONObject jo = new JSONObject();
         // 屠苏 红玉池子要特殊处理  岁暮重明 玉照长夜，陈酒新酌
@@ -910,7 +937,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         } else {
             neCommonPool(poolDataLambdaQueryWrapper);
         }
-        List<PoolData> list = list(poolDataLambdaQueryWrapper);
+        List<PoolData> list = getFormatPoolData(poolDataLambdaQueryWrapper);
 
         if (list.isEmpty()) {
             return R.fail("没有找到数据，数据可能未加载完成，请等待加载完成后在来~");
@@ -938,7 +965,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 j.setId(pd.getId());
                 // 同调者
                 if (isCharPool) {
-                    if (pd.getName().equalsIgnoreCase(init.localUpChar.getString(pd.getPool()))) {
+                    if (init.localUpChar.getString(pd.getPool()).contains(pd.getName())) {
                         // 抽到了，但是需要看看前一个是不是0,这个还是大保底
                         if (!rData.isEmpty() && rData.getLast() == 0L) {
                             tempBaodiFlag = -1L;
@@ -1108,7 +1135,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                     log.info("用户{}总插入数据结束:{}条", uid, count + temp.size());
                     poolDataMapper.insert(temp); // 批量保存
                 }
-            }finally {
+            } finally {
                 userStatusMap.remove(uid);
             }
             userService.update(new LambdaUpdateWrapper<User>().set(User::getToken, token).eq(User::getUid, uid));
@@ -1336,6 +1363,76 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
             e.printStackTrace();
             log.info("烙痕数据导入出错{}:{}:{}", uid, starttime, endtime);
         }
+        return result;
+    }
+
+    private HashMap<String, JSONObject> getFormatAllPoolDataNameMap() {
+        HashMap<String, JSONObject> map = new HashMap<>();
+        ArrayList<String> result = new ArrayList<>();
+        ArrayList<JSONObject> formatAllPoolData = getFormatAllPoolData();
+
+        for (JSONObject jo : formatAllPoolData) {
+            map.put(jo.getString("name"), jo);
+        }
+
+        return map;
+    }
+
+    public ArrayList<JSONObject> getFormatAllPoolData() {
+        String json = ReqUtils.get("https://bjhl.qianqiu.info/pool.json");
+        JSONObject fullData = JSONObject.parseObject(json);
+
+        // 存储最终结果
+        ArrayList<JSONObject> result = new ArrayList<>();
+
+        // 用于按 group 聚合数据：group -> List<JSONObject>
+        Map<String, List<JSONObject>> groupedPools = new HashMap<>();
+
+        // 临时存储没有 group 的条目
+        List<JSONObject> ungroupedPools = new ArrayList<>();
+
+        // 第一步：遍历所有条目，分离有 group 和无 group 的
+        for (String key : fullData.keySet()) {
+            JSONObject item = fullData.getJSONObject(key);
+            if (item.getString("time") == null) {
+                continue; // 忽略没有时间的条目
+            }
+
+            String group = item.getString("group");
+            if (group != null && !group.isEmpty()) {
+                groupedPools.computeIfAbsent(group, k -> new ArrayList<>()).add(item);
+            } else {
+                ungroupedPools.add(item);
+            }
+        }
+
+        // 第二步：处理每个 group
+        for (List<JSONObject> groupItems : groupedPools.values()) {
+            if (groupItems.isEmpty()) continue;
+
+            // 按时间排序（取最早开始时间）
+            groupItems.sort(Comparator.comparing(o -> o.getString("time")));
+
+            // 拼接所有 name
+            String mergedName = groupItems.stream()
+                    .map(obj -> obj.getString("name"))
+                    .collect(Collectors.joining(" ")); // 用空格连接
+
+            JSONObject merged = new JSONObject();
+            merged.put("name", mergedName);
+            merged.put("type", groupItems.getFirst().getString("type")); // 继承第一个的 type
+            merged.put("time", groupItems.getFirst().getString("time")); // 使用最早的 time
+            // 可选：添加 group 字段标识
+            // merged.put("group", groupItems.get(0).getString("group"));
+
+            result.add(merged);
+        }
+
+        // 第三步：添加未分组的条目
+        result.addAll(ungroupedPools);
+
+        // 第四步：按时间排序整个列表（可选）
+        result.sort(Comparator.comparing(o -> o.getString("time")));
         return result;
     }
 }
