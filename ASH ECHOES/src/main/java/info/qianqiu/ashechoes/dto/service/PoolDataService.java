@@ -1021,21 +1021,6 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         for (String s : pools.keySet()) {
             pools.put(s, pools.get(s).reversed());
         }
-        List<PoolDataVo> 游光澄明 = pools.get("游光澄明");
-        List<PoolDataVo> c1 = pools.get("岁暮重明");
-        List<PoolDataVo> c2 = pools.get("玉照长夜，陈酒新酌");
-        if (c1 != null && c2 != null) {
-            c1.addAll(c2);
-            List<PoolDataVo> collect = c1.stream().sorted(Comparator.comparing(PoolDataVo::getTime).reversed()
-                            .thenComparing(Comparator.comparing(PoolDataVo::getId).reversed()))
-                    .collect(Collectors.toList());
-            // 删除岑樱池子，是因为排序问题
-            pools.remove("游光澄明");
-            pools.remove("岁暮重明");
-            pools.remove("玉照长夜，陈酒新酌");
-            pools.put("玉照长夜，陈酒新酌 岁暮重明", collect);
-            pools.put("游光澄明", 游光澄明);
-        }
         jo.put("ui", pools);
         return R.ok(jo);
     }
