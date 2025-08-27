@@ -31,12 +31,12 @@ public class PoolDataController {
     private final PoolDataRankService poolDataRankService;
 
     /**
-     * 获取所有卡池信息
+     * 获取所有UP卡池信息
      *
      * @return
      */
     @GetMapping("/pool/all")
-    public R getAllPool() {
+    public R getAllUpPool() {
 
         return R.ok(poolDataService.getFormatAllPoolData());
     }

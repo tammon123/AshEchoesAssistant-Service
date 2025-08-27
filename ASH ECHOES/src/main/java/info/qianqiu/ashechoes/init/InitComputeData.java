@@ -60,9 +60,9 @@ public class InitComputeData implements CommandLineRunner {
     private final String ASSETS_VERSION = SpringUtil.getBean(EnvConfig.class).getAssetsVersion();
 
     public JSONObject poolData;
+    public JSONObject poolDataByName;
     public JSONObject charsData;
     public JSONObject memoryData;
-    public JSONObject localUpChar;
 
     private final CharacterService characterService;
     private final MemoryService memoryService;
@@ -92,7 +92,6 @@ public class InitComputeData implements CommandLineRunner {
         originSkillFrom.clear();
         charactersSkill.clear();
         thanks.clear();
-        localUpChar.clear();
         characterAvatar.clear();
         memoryAvatar.clear();
         skillAvatar.clear();
@@ -588,10 +587,45 @@ public class InitComputeData implements CommandLineRunner {
     }
 
     private void initWebPoolDataInfo() {
-        localUpChar = JSONObject.parseObject(ReqUtils.get("http://bjhl.qianqiu.info/poolAim.json"));
+        poolData = JSONObject.parseObject(ReqUtils.get("http://bjhl.qianqiu.info/pool.json"));
+        poolDataByName = new JSONObject();
+        for (Object o : poolData.values()) {
+            JSONObject o1 = (JSONObject) o;
+            poolDataByName.put(o1.getString("name"), o1);
+        }
         memoryData = JSONObject.parseObject(ReqUtils.get("http://bjhl.qianqiu.info/memory.json"));
         charsData = JSONObject.parseObject(ReqUtils.get("http://bjhl.qianqiu.info/chars.json"));
-        poolData = JSONObject.parseObject(ReqUtils.get("http://bjhl.qianqiu.info/pool.json"));
+    }
+
+    /**
+     * 查看当前卡池的角色是否为UP角色
+     *
+     * @param charName
+     * @param pool
+     * @return
+     */
+    public boolean checkCharIsUp(String charName, String pool) {
+
+        if (pool.trim().contains(" ")) {
+            String[] split = pool.split(" ");
+            StringBuilder chars = new StringBuilder();
+            for (String poolName : split) {
+                String upChar = poolDataByName.getJSONObject(poolName).getString("up");
+                if (upChar != null) {
+                    chars.append(upChar).append(",");
+                }
+            }
+            if (chars.toString().contains(charName)) {
+                return true;
+            }
+        } else {
+            String upChar = poolDataByName.getJSONObject(pool).getString("up");
+            if (upChar != null && upChar.trim().equals(charName)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void initDamage(List<Damage> list) {

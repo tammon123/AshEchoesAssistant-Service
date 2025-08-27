@@ -69,15 +69,6 @@ public class WxController {
         BOT_COMMAND.add("全部抽取烙痕");
     }
 
-    @GetMapping("/test")
-    public String test() {
-        ReqUtils.wxFormdataPost(
-                wxConfig.getUrl() + "/cgi-bin/material/add_material?access_token=ACCCESS_TOKEN&type=image",
-                new FileSystemResource("C:\\Users\\Nan\\Downloads\\236191027543744513_pool=0.jpg")
-        );
-        return "";
-    }
-
     /**
      * 接收微信普通消息（POST请求）
      * 微信服务器会以XML格式推送消息到这里

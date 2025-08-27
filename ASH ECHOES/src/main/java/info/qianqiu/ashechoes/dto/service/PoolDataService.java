@@ -110,7 +110,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         for (PoolData pd : list.reversed()) {
             //0是角色 1是烙痕
             if (pd.getType() == 0) {
-                if (pd.getName().equals(init.localUpChar.get(pd.getPool()))) {
+                if (init.checkCharIsUp(pd.getName(), pd.getPool())) {
                     xiandinc += 1;
                     if (!cflag.isEmpty() && cflag.getLast() == 0L) {
                         cflag.add(-1L);
@@ -304,13 +304,13 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 if (cflag.isEmpty()) {
                     if (!localCharPool.equals(pd.getPool())) {
                         // 如果上期的角色歪了，下一个角色为UP角色就不应该记录
-                        if (!pd.getName().equals(init.localUpChar.get(pd.getPool()))) {
+                        if (!init.checkCharIsUp(pd.getName(), pd.getPool())) {
                             charIgnore = true;
                         }
                         continue;
                     }
                 }
-                if (pd.getName().equals(init.localUpChar.get(pd.getPool()))) {
+                if (init.checkCharIsUp(pd.getName(), pd.getPool())) {
                     xiandinc += 1;
                     if (charIgnore) {
                         cflag.add(-1L);
@@ -737,7 +737,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
         HashMap<String, JSONObject> formatAllPoolDataNameMap = getFormatAllPoolDataNameMap();
         Set<String> formatAllPoolDataNameKeySet = formatAllPoolDataNameMap.keySet();
         for (String pool : collect.keySet()) {
-            // 如果格式化后的卡池列表不包含原始数据的卡池，那么这个卡池就需要处理
+            // 如果格式化后的卡池列表不包含原始数据的卡池(因为原有卡池已经被group分组合并了)，那么这个卡池就需要处理
             if (!formatAllPoolDataNameKeySet.contains(pool)) {
                 for (String name : formatAllPoolDataNameKeySet) {
                     JSONObject jo = formatAllPoolDataNameMap.get(name);
@@ -826,7 +826,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 j.setId(pd.getId());
                 // 同调者
                 if ("0".equals(type)) {
-                    if (init.localUpChar.getString(pd.getPool()).contains(pd.getName())) {
+                    if (init.checkCharIsUp(pd.getName(), pd.getPool())) {
                         // 抽到了，但是需要看看前一个是不是0,这个还是大保底
                         if (!rData.isEmpty() && rData.getLast() == 0L) {
                             tempBaodiFlag = -1L;
@@ -967,7 +967,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
                 if (isCharPool) {
                     if (isCz) {
                         tempBaodiFlag = 1L;
-                    }else if (init.localUpChar.getString(pd.getPool()).contains(pd.getName())) {
+                    }else if (init.checkCharIsUp(pd.getName(), pd.getPool())) {
                         // 抽到了，但是需要看看前一个是不是0,这个还是大保底
                         if (!rData.isEmpty() && rData.getLast() == 0L) {
                             tempBaodiFlag = -1L;
@@ -1353,7 +1353,6 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
 
     private HashMap<String, JSONObject> getFormatAllPoolDataNameMap() {
         HashMap<String, JSONObject> map = new HashMap<>();
-        ArrayList<String> result = new ArrayList<>();
         ArrayList<JSONObject> formatAllPoolData = getFormatAllPoolData();
 
         for (JSONObject jo : formatAllPoolData) {
@@ -1364,9 +1363,7 @@ public class PoolDataService extends ServiceImpl<PoolDataMapper, PoolData> {
     }
 
     public ArrayList<JSONObject> getFormatAllPoolData() {
-        String json = ReqUtils.get("http://bjhl.qianqiu.info/pool.json");
-        JSONObject fullData = JSONObject.parseObject(json);
-
+        JSONObject fullData = JSONObject.parseObject(init.poolData.toJSONString());
         // 存储最终结果
         ArrayList<JSONObject> result = new ArrayList<>();
 
